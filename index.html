@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>บิลก๊วนแบด</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mali:wght@400;600;700&display=swap">
+<link rel="stylesheet" crossorigin="anonymous" href="https://fonts.googleapis.com/css2?family=Mali:wght@400;600;700&display=swap">
 <style>
 /* Layout: one hand-drawn ledger sheet (rough.js lines over a plain table), sketch bar chart + who-pays-whom list below */
 :root {
@@ -121,6 +121,28 @@ ul.transfers li.done { color: var(--pencil); text-decoration: line-through; text
 label.btn { cursor: pointer; }
 #json-in-msg.err { color: var(--owe); }
 #json-in-msg.good { color: var(--paid); }
+.sheet-tools { justify-content: flex-end; margin-bottom: 6px; }
+dialog#img-dialog { border: 2px solid var(--ink); border-radius: 18px 8px 16px 10px / 10px 16px 8px 18px; padding: 0; background: var(--paper); color: var(--ink);
+  width: min(720px, calc(100vw - 32px)); max-height: calc(100vh - 32px); }
+dialog#img-dialog::backdrop { background: rgba(28, 29, 34, 0.45); }
+.img-box { display: grid; gap: 12px; padding: 20px; font-family: var(--font); }
+.img-picks { display: flex; flex-wrap: wrap; gap: 10px 22px; }
+.img-picks label { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; }
+.img-preview { border: 1.5px dashed var(--faint); border-radius: 8px; min-height: 120px; max-height: 50vh; overflow: auto; display: grid; place-items: center; padding: 8px; }
+.img-preview img { max-width: 100%; height: auto; display: block; }
+#capture-holder { position: fixed; left: -100000px; top: 0; pointer-events: none; }
+.capture { display: inline-block; background: #ffffff; color: var(--ink); font-family: var(--font); padding: 24px 28px; }
+.capture h1 { font-size: 26px; margin: 0 0 4px; }
+.capture .cap-sub { color: var(--pencil); font-size: 13px; margin: 0 0 16px; }
+.capture section { margin-top: 18px; }
+.capture section:first-of-type { margin-top: 0; }
+.capture .sheet { display: inline-block; min-width: 0; }
+.capture .cap-name { font-weight: 700; }
+.capture .cap-owner { color: var(--accent); font-weight: 600; }
+.tick-img { display: inline-block; width: 22px; height: 22px; border: 2px solid var(--ink); border-radius: var(--wobble); position: relative; vertical-align: middle; }
+.tick-img.paid { border-color: var(--paid); border-style: dashed; }
+.tick-img.on::after { content: "✓"; position: absolute; left: 1px; top: -9px; font-size: 25px; font-weight: 700; color: var(--accent); transform: rotate(-8deg); }
+.tick-img.paid.on::after { color: var(--paid); }
 .tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: 14px; }
 .confirm { display: inline-flex; gap: 8px; align-items: center; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } .plus:hover { transform: none; } }
@@ -147,6 +169,9 @@ label.btn { cursor: pointer; }
   </div>
 
   <section>
+    <div class="tools sheet-tools">
+      <button class="btn" id="img-open" data-i18n="imgBtn">📷 คัดลอก / บันทึกเป็นรูป</button>
+    </div>
     <div class="scroller">
       <div class="sheet" id="sheet">
         <table id="table"></table>
@@ -202,7 +227,29 @@ label.btn { cursor: pointer; }
   </section>
 </div>
 
+<dialog id="img-dialog" aria-labelledby="img-title">
+  <form method="dialog" class="img-box" id="img-form">
+    <h2 id="img-title" data-i18n="imgTitle">คัดลอก / บันทึกเป็นรูป</h2>
+    <p class="caption" data-i18n="imgPick">เลือกส่วนที่จะใส่ในรูป</p>
+    <div class="img-picks">
+      <label><input type="checkbox" class="tick" id="pick-table" checked> <span data-i18n="imgTable">ตาราง</span></label>
+      <label><input type="checkbox" class="tick" id="pick-chart" checked> <span data-i18n="imgChart">กราฟ</span></label>
+      <label><input type="checkbox" class="tick" id="pick-transfers" checked> <span data-i18n="transfersTitle">โอนให้ใคร</span></label>
+    </div>
+    <div class="img-preview" id="img-preview"><span class="muted" data-i18n="imgWorking">กำลังสร้างรูป…</span></div>
+    <p class="caption" data-i18n="imgHint">บนมือถือ กดค้างที่รูปเพื่อบันทึกหรือแชร์ได้</p>
+    <div class="tools">
+      <button type="button" class="btn" id="img-copy" data-i18n="imgCopy">คัดลอกรูป</button>
+      <button type="button" class="btn" id="img-save" data-i18n="imgSave">บันทึก PNG</button>
+      <button type="submit" class="btn" id="img-close" data-i18n="close">ปิด</button>
+      <span id="img-msg" class="muted"></span>
+    </div>
+  </form>
+</dialog>
+<div id="capture-holder" aria-hidden="true"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/roughjs@4.6.6/bundled/rough.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
 <script>
 (() => {
   const LS_KEY = "badminton-bill-v1";
@@ -233,6 +280,10 @@ label.btn { cursor: pointer; }
       sumLine: (it, price, owner, n) => `• ${it} ${price} (${owner} ออก, หาร ${n} คน)`, sentNote: "(โอนแล้ว)",
       chartFail: "โหลดตัววาดกราฟไม่สำเร็จ", mostOwed: "ค้างเยอะสุด!",
       stLocal: "บันทึกอัตโนมัติในเบราว์เซอร์นี้", stNoStore: "เบราว์เซอร์นี้บันทึกไม่ได้ · ปิดหน้าแล้วข้อมูลหาย", stConnecting: "กำลังโหลด…",
+      imgBtn: "📷 คัดลอก / บันทึกเป็นรูป", imgTitle: "คัดลอก / บันทึกเป็นรูป", imgPick: "เลือกส่วนที่จะใส่ในรูป", imgTable: "ตาราง", imgChart: "กราฟ",
+      imgWorking: "กำลังสร้างรูป…", imgHint: "บนมือถือ กดค้างที่รูปเพื่อบันทึกหรือแชร์ได้", imgCopy: "คัดลอกรูป", imgSave: "บันทึก PNG", close: "ปิด",
+      imgNone: "เลือกอย่างน้อย 1 ส่วน", imgFail: "สร้างรูปไม่สำเร็จ ลองใหม่อีกครั้ง", imgCopied: "คัดลอกรูปแล้ว ✓ ไปวางในไลน์ได้เลย",
+      imgCopyFail: "เบราว์เซอร์นี้คัดลอกรูปไม่ได้ ใช้ปุ่มบันทึก หรือกดค้างที่รูป", imgSaved: "บันทึกแล้ว ✓",
       clearQ: "ล้างทุกอย่างจริงไหม?", clearYes: "ล้างเลย", no: "ไม่",
       copyHold: "กดค้างเพื่อคัดลอกข้อความด้านล่าง", copied: "คัดลอกแล้ว ✓", selectedCopy: "เลือกข้อความให้แล้ว กดคัดลอกเอง",
       saved: "บันทึกแล้ว ✓", saveCancel: "ยกเลิกการบันทึก", saveFail: "บันทึกไฟล์ไม่ได้ ใช้ปุ่มคัดลอกแทน",
@@ -260,6 +311,10 @@ label.btn { cursor: pointer; }
       sumLine: (it, price, owner, n) => `• ${it} ${price} (${owner} paid, split ${n} ways)`, sentNote: "(paid)",
       chartFail: "Couldn't load the chart drawer", mostOwed: "owes the most!",
       stLocal: "Saved automatically in this browser", stNoStore: "This browser can't save · data is lost when you close the page", stConnecting: "Loading…",
+      imgBtn: "📷 Copy / save as image", imgTitle: "Copy / save as image", imgPick: "Choose what goes in the image", imgTable: "Table", imgChart: "Chart",
+      imgWorking: "Making image…", imgHint: "On a phone, long-press the image to save or share it.", imgCopy: "Copy image", imgSave: "Save PNG", close: "Close",
+      imgNone: "Pick at least one part", imgFail: "Couldn't make the image, try again", imgCopied: "Image copied ✓ paste it in the chat",
+      imgCopyFail: "This browser can't copy images. Use Save, or long-press the image.", imgSaved: "Saved ✓",
       clearQ: "Clear everything?", clearYes: "Clear it", no: "No",
       copyHold: "Long-press to copy the text below", copied: "Copied ✓", selectedCopy: "Text selected, copy it manually",
       saved: "Saved ✓", saveCancel: "Save cancelled", saveFail: "Couldn't save the file, use Copy instead",
@@ -422,7 +477,8 @@ label.btn { cursor: pointer; }
         ? `<span class="owe">${fmt(left)}</span>${paid > 0.005 ? `<span class="share">${t("paidSoFar", fmt(paid))}</span>` : ""}`
         : owed > 0.005 ? `<span class="ok">${t("done")}</span>` : `<span class="muted">—</span>`;
       const st = document.querySelector(`#pc-${p.id} .stamp`);
-      if (st) st.textContent = owed > 0.005 && left <= 0.005 ? t("cleared") : "";
+      const allPaid = state.items.some(it => owesOn(it, p.id) && it.price) && state.items.every(it => !owesOn(it, p.id) || !it.price || it.paidBy.includes(p.id));
+      if (st) st.textContent = allPaid ? t("cleared") : "";
     }
     for (const it of state.items) {
       const share = it.split.length ? it.price / it.split.length : 0;
@@ -460,8 +516,7 @@ label.btn { cursor: pointer; }
 
   // ---------- sketch drawing ----------
   const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  function drawLines() {
-    const svg = $("lines"), table = $("table");
+  function drawLines(table = $("table"), svg = $("lines")) {
     if (!window.rough) { table.style.borderCollapse = "collapse"; return; }
     svg.innerHTML = "";
     const W = table.offsetWidth, H = table.offsetHeight;
@@ -490,15 +545,15 @@ label.btn { cursor: pointer; }
     svg.appendChild(rc.rectangle(2, 2, W - 4, bottom - 4, { stroke: ink, strokeWidth: 2, roughness: 1.4, seed: 7 }));
   }
 
-  function drawChart(c) {
-    const svg = $("chart");
-    const W = Math.max(280, svg.clientWidth || 500), H = 240;
+  function drawChart(c, svg = $("chart"), width) {
+    const W = width || Math.max(280, svg.clientWidth || 500), H = 240;
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("height", H);
+    if (width) svg.setAttribute("width", W);
     svg.innerHTML = "";
     const ink = cssVar("--ink"), pencil = cssVar("--pencil"), owe = cssVar("--owe"), paid = cssVar("--paid"), font = cssVar("--font");
     const P = state.people;
     const L = 16, R = 16, T = 34, B = 40;
-    const max = Math.max(1, ...P.map(p => c.owes[p.id]));
+    const max = Math.max(1, ...P.map(p => c.paidAmt[p.id] + c.netOwe[p.id]));
     const text = (x, y, s, opts = {}) => {
       const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
       t.setAttribute("x", x); t.setAttribute("y", y); t.setAttribute("text-anchor", opts.anchor || "middle");
@@ -513,7 +568,7 @@ label.btn { cursor: pointer; }
     const slot = (W - L - R) / P.length, bw = Math.min(64, slot * 0.6);
     let top = null;
     P.forEach((p, i) => {
-      const owed = c.owes[p.id], paidA = c.paidAmt[p.id], left = owed - paidA;
+      const paidA = c.paidAmt[p.id], left = c.netOwe[p.id];
       const cx = L + slot * i + slot / 2, scale = (H - T - B) / max;
       const hp = paidA > 0.005 ? Math.max(3, paidA * scale) : 0, hu = left > 0.005 ? Math.max(3, left * scale) : 0;
       if (hp) svg.appendChild(rc.rectangle(cx - bw / 2, H - B - hp, bw, hp, { stroke: ink, strokeWidth: 1.5, roughness: 1.6, seed: 100 + i, fill: paid, fillStyle: "cross-hatch", hachureGap: 6, fillWeight: 1.2 }));
@@ -679,6 +734,119 @@ label.btn { cursor: pointer; }
     try { localStorage.setItem("badminton-bill-lang", lang); } catch (e) {}
     applyStatic(); $("status-text").textContent = t(statusKey); render();
   }));
+
+  // ---------- image export ----------
+  // Builds a static copy (inputs -> text, checkboxes -> drawn ticks, no edit buttons) and renders it with html-to-image.
+  function staticTable() {
+    const tbl = $("table").cloneNode(true);
+    tbl.querySelector("#add-item")?.closest("tr").remove();
+    [...tbl.rows].forEach(r => r.lastElementChild && r.lastElementChild.remove()); // the +/× column
+    tbl.querySelectorAll("button, td.label .muted").forEach(el => el.remove());
+    tbl.querySelectorAll("input[type=text], input[type=number]").forEach(el => {
+      const sp = document.createElement("span");
+      sp.textContent = el.value || (el.type === "number" ? "0" : "");
+      if (el.classList.contains("pname")) sp.className = "cap-name";
+      el.replaceWith(sp);
+    });
+    tbl.querySelectorAll("select").forEach(el => {
+      const sp = document.createElement("span");
+      sp.className = "cap-owner";
+      sp.textContent = el.value ? el.selectedOptions[0]?.textContent || "?" : "?";
+      el.replaceWith(sp);
+    });
+    // a clone keeps only the checked attribute from first render, so read live state from the originals
+    const live = new Map([...$("table").querySelectorAll("input.tick")].map(i => [i.id, i.checked]));
+    tbl.querySelectorAll("input.tick").forEach(el => {
+      const sp = document.createElement("span");
+      sp.className = "tick-img" + (el.classList.contains("paid") ? " paid" : "") + (live.get(el.id) ? " on" : "");
+      el.replaceWith(sp);
+    });
+    tbl.querySelectorAll("[id]").forEach(el => el.removeAttribute("id"));
+    tbl.removeAttribute("id");
+    return tbl;
+  }
+  function buildCapture(pick) {
+    const holder = $("capture-holder");
+    holder.innerHTML = "";
+    const node = document.createElement("div");
+    node.className = "capture";
+    const h = document.createElement("h1"); h.textContent = (state.title || t("appTitle")) + " 🏸";
+    const sub = document.createElement("p"); sub.className = "cap-sub";
+    sub.textContent = `${t("total")} ${fmt(compute().total)} · ${new Date().toLocaleDateString(lang === "en" ? "en-GB" : "th-TH", { day: "numeric", month: "short", year: "numeric" })}`;
+    node.append(h, sub);
+    holder.appendChild(node);
+    let tableBox = null;
+    if (pick.table) {
+      const sec = document.createElement("section");
+      tableBox = document.createElement("div"); tableBox.className = "sheet";
+      const tbl = staticTable();
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("class", "lines");
+      tableBox.append(tbl, svg); sec.appendChild(tableBox); node.appendChild(sec);
+      drawLines(tbl, svg);
+    }
+    const width = Math.max(520, tableBox ? tableBox.offsetWidth : 0);
+    if (pick.chart) {
+      const sec = document.createElement("section");
+      const h2 = document.createElement("h2"); h2.textContent = t("chartTitle");
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      const cap = document.createElement("p"); cap.className = "caption"; cap.textContent = t("chartCaption");
+      sec.append(h2, svg, cap); node.appendChild(sec);
+      drawChart(compute(), svg, Math.min(width, 760));
+    }
+    if (pick.transfers) {
+      const sec = document.createElement("section");
+      const h2 = document.createElement("h2"); h2.textContent = t("transfersTitle");
+      const ul = $("transfers").cloneNode(true); ul.removeAttribute("id"); ul.style.maxWidth = "520px";
+      sec.append(h2, ul); node.appendChild(sec);
+    }
+    return node;
+  }
+  let imgBlob = null, imgUrl = null, imgJob = 0;
+  const imgMsg = (k) => { $("img-msg").textContent = k ? t(k) : ""; };
+  const currentPick = () => ({ table: $("pick-table").checked, chart: $("pick-chart").checked, transfers: $("pick-transfers").checked });
+  async function makeImage() {
+    const job = ++imgJob, pick = currentPick();
+    imgBlob = null;
+    $("img-copy").disabled = $("img-save").disabled = true;
+    if (!pick.table && !pick.chart && !pick.transfers) { $("img-preview").innerHTML = `<span class="muted">${t("imgNone")}</span>`; return; }
+    $("img-preview").innerHTML = `<span class="muted">${t("imgWorking")}</span>`;
+    if (!window.htmlToImage) { $("img-preview").innerHTML = `<span class="owe">${t("imgFail")}</span>`; return; }
+    try {
+      if (document.fonts) await document.fonts.ready;
+      const node = buildCapture(pick);
+      const blob = await htmlToImage.toBlob(node, { pixelRatio: 2, backgroundColor: "#ffffff" });
+      $("capture-holder").innerHTML = "";
+      if (job !== imgJob || !blob) return;
+      imgBlob = blob;
+      if (imgUrl) URL.revokeObjectURL(imgUrl);
+      imgUrl = URL.createObjectURL(blob);
+      $("img-preview").innerHTML = "";
+      const img = new Image(); img.src = imgUrl; img.alt = t("imgTitle");
+      $("img-preview").appendChild(img);
+      $("img-copy").disabled = $("img-save").disabled = false;
+    } catch (err) {
+      console.error(err);
+      if (job === imgJob) $("img-preview").innerHTML = `<span class="owe">${t("imgFail")}</span>`;
+    }
+  }
+  $("img-open").addEventListener("click", () => { imgMsg(""); $("img-dialog").showModal(); makeImage(); });
+  ["pick-table", "pick-chart", "pick-transfers"].forEach(id => $(id).addEventListener("change", () => { imgMsg(""); makeImage(); }));
+  $("img-dialog").addEventListener("click", (e) => { if (e.target === $("img-dialog")) $("img-dialog").close(); }); // click on backdrop
+  $("img-copy").addEventListener("click", async () => {
+    if (!imgBlob) return;
+    try {
+      if (!navigator.clipboard || !window.ClipboardItem) throw new Error("no clipboard");
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": imgBlob })]);
+      imgMsg("imgCopied");
+    } catch (err) { imgMsg("imgCopyFail"); }
+  });
+  $("img-save").addEventListener("click", () => {
+    if (!imgUrl) return;
+    const a = document.createElement("a");
+    a.href = imgUrl; a.download = "badminton-bill-" + new Date().toISOString().slice(0, 10) + ".png";
+    document.body.appendChild(a); a.click(); a.remove();
+    imgMsg("imgSaved");
+  });
 
   // ---------- boot ----------
   try { const s = clean(JSON.parse(localStorage.getItem(LS_KEY) || "null")); if (s) state = s; } catch (e) {}

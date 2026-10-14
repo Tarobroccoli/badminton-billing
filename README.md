@@ -7,6 +7,7 @@ A single-page tool for splitting badminton court costs with friends, drawn in an
 - Bottom rows show what each person still owes, plus a "paid everything" toggle
 - Sketch bar chart of paid vs. unpaid, and a "who transfers to whom" list (netted between pairs)
 - JSON export / import
+- Copy or save a PNG image, choosing which parts to include (table, chart, who pays whom)
 - Thai / English toggle (TH | EN, top right), remembered per browser
 
 ## Use it
