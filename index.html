@@ -1,0 +1,621 @@
+<title>บิลก๊วนแบด</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mali:wght@400;600;700&display=swap">
+<style>
+/* Layout: one hand-drawn ledger sheet (rough.js lines over a plain table), sketch bar chart + who-pays-whom list below */
+:root {
+  --paper: #ffffff;
+  --ink: #1c1d22;
+  --pencil: #6b6d78;
+  --faint: #e6e7ee;
+  --accent: #2f5fd0;   /* ballpoint blue: owner + links */
+  --paid: #2c8a4b;
+  --owe: #c8372d;
+  --hl: #fff3a6;
+  --font: "Mali", "Comic Sans MS", "Chalkboard SE", cursive, sans-serif;
+  --wobble: 255px 12px 225px 12px / 12px 225px 12px 255px;
+}
+/* always white paper, even in dark mode (user request) */
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.5; }
+.wrap { max-width: 1100px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 48px; display: grid; gap: 28px; }
+
+header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
+h1 { font-size: clamp(28px, 5vw, 40px); margin: 0; line-height: 1.1; text-wrap: balance; }
+h1 small { display: block; font-size: 15px; font-weight: 400; color: var(--pencil); margin-top: 6px; }
+h2 { font-size: 22px; margin: 0 0 8px; }
+.status { font-size: 13px; color: var(--pencil); display: flex; align-items: center; gap: 8px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--pencil); }
+.status.live .dot { background: var(--paid); }
+
+.banner { background: var(--hl); padding: 8px 14px; border-radius: var(--wobble); font-size: 14px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+
+.scroller { overflow-x: auto; padding: 6px 4px 10px; }
+.sheet { position: relative; display: inline-block; min-width: 100%; }
+.sheet svg.lines { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+table { border-collapse: collapse; min-width: 100%; }
+th, td { padding: 8px 10px; text-align: center; vertical-align: middle; white-space: nowrap; }
+th { font-weight: 700; font-size: 15px; }
+td.item, th.item { text-align: left; min-width: 170px; }
+td.price, th.price { text-align: right; min-width: 96px; }
+th.owner, td.owner { min-width: 120px; }
+.num { font-variant-numeric: tabular-nums; }
+tr.foot td { font-weight: 600; }
+tr.foot td.label { text-align: left; color: var(--pencil); font-weight: 600; }
+tr.sum-row td { padding-top: 12px; }
+
+input[type="text"], input[type="number"], select {
+  font: inherit; color: inherit; background: transparent; border: none;
+  border-bottom: 1.5px dashed var(--faint); padding: 2px 4px; width: 100%; min-width: 0;
+}
+input[type="number"] { text-align: right; -moz-appearance: textfield; }
+input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input:focus, select:focus { outline: none; border-bottom-color: var(--accent); background: color-mix(in srgb, var(--hl) 50%, transparent); }
+select { cursor: pointer; color: var(--accent); font-weight: 600; }
+select option { color: var(--ink); background: var(--paper); }
+th input.pname { text-align: center; font-weight: 700; width: 7.5em; }
+
+.person-head { display: flex; align-items: center; gap: 2px; justify-content: center; }
+
+/* hand-drawn checkbox */
+.tick { appearance: none; -webkit-appearance: none; width: 26px; height: 26px; margin: 0; cursor: pointer;
+  border: 2px solid var(--ink); border-radius: var(--wobble); background: transparent; position: relative; vertical-align: middle; }
+.tick:checked::after { content: "✓"; position: absolute; left: 2px; top: -9px; font-size: 28px; font-weight: 700; color: var(--accent); transform: rotate(-8deg); }
+.tick.paid:checked::after { color: var(--paid); }
+.tick:focus-visible { outline: 2px dashed var(--accent); outline-offset: 3px; }
+.pair { display: inline-flex; gap: 6px; align-items: center; }
+.slot { display: inline-block; width: 26px; font-size: 10px; color: var(--pencil); line-height: 1.1; white-space: normal; }
+.tick.paid { border-color: var(--paid); border-style: dashed; }
+.sub { display: flex; justify-content: center; gap: 12px; font-size: 11px; font-weight: 600; color: var(--pencil); margin-top: 2px; }
+.share { display: block; font-size: 11px; color: var(--pencil); line-height: 1.2; min-height: 13px; }
+
+button { font: inherit; color: inherit; cursor: pointer; background: transparent; border: none; }
+button:focus-visible { outline: 2px dashed var(--accent); outline-offset: 2px; }
+.btn { border: 2px solid var(--ink); border-radius: var(--wobble); padding: 4px 14px; font-weight: 600; }
+.btn:hover { background: var(--hl); }
+.btn.danger { border-color: var(--owe); color: var(--owe); }
+.plus { width: 34px; height: 34px; border: 2px solid var(--ink); border-radius: 50% 45% 52% 48%; font-size: 22px; font-weight: 700; line-height: 1; }
+.plus:hover { background: var(--hl); transform: rotate(-6deg); }
+.x { color: var(--pencil); font-size: 16px; padding: 0 4px; line-height: 1; }
+.x:hover { color: var(--owe); }
+.add-row { color: var(--accent); font-weight: 600; padding: 4px 0; }
+.add-row:hover { text-decoration: underline wavy; }
+
+.owe { color: var(--owe); }
+.ok { color: var(--paid); }
+.muted { color: var(--pencil); font-weight: 400; }
+td.paid-col { position: relative; }
+.stamp { display: block; font-size: 11px; color: var(--paid); transform: rotate(-6deg); }
+
+.below { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 28px; align-items: start; }
+@media (max-width: 760px) { .below { grid-template-columns: minmax(0, 1fr); } }
+#chart { width: 100%; display: block; }
+.caption { font-size: 13px; color: var(--pencil); margin: 4px 0 0; }
+
+ul.transfers { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+ul.transfers li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+ul.transfers li.done { color: var(--pencil); text-decoration: line-through; text-decoration-color: var(--paid); }
+.arrow { color: var(--pencil); }
+.amt { font-weight: 700; margin-left: auto; }
+
+.json-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; margin-top: 10px; }
+@media (max-width: 760px) { .json-grid { grid-template-columns: minmax(0, 1fr); } }
+.json textarea { width: 100%; height: 14em; margin-top: 8px; font: 12px/1.45 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  color: var(--ink); background: var(--paper); border: 2px solid var(--ink); border-radius: 6px 14px 8px 12px / 12px 6px 14px 8px; padding: 10px; resize: vertical; }
+.json textarea:focus { outline: none; border-color: var(--accent); }
+label.btn { cursor: pointer; }
+#json-in-msg.err { color: var(--owe); }
+#json-in-msg.good { color: var(--paid); }
+.tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: 14px; }
+.confirm { display: inline-flex; gap: 8px; align-items: center; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } .plus:hover { transform: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>บิลก๊วนแบด 🏸
+      <small><input type="text" id="session-title" aria-label="ชื่อรอบตี" placeholder="เช่น ตีวันเสาร์ 12 ต.ค." style="width:min(22em,80vw)"></small>
+    </h1>
+    <div class="status" id="status"><span class="dot"></span><span id="status-text">กำลังเชื่อมต่อ…</span></div>
+  </header>
+
+  <div class="banner" id="example-banner" hidden>
+    <span>นี่คือ<strong>ข้อมูลตัวอย่าง</strong> แก้ชื่อ ราคา หรือกดล้างเพื่อเริ่มบิลจริง</span>
+    <button class="btn" id="start-fresh">เริ่มบิลใหม่</button>
+  </div>
+
+  <section>
+    <div class="scroller">
+      <div class="sheet" id="sheet">
+        <table id="table"></table>
+        <svg class="lines" id="lines" aria-hidden="true"></svg>
+      </div>
+    </div>
+  </section>
+
+  <div class="below">
+    <section>
+      <h2>ใครต้องจ่ายเท่าไหร่</h2>
+      <svg id="chart" role="img" aria-label="กราฟยอดที่แต่ละคนต้องจ่าย"></svg>
+      <p class="caption">แท่งลายเขียว = จ่ายแล้ว · แท่งลายแดง = ยังค้าง</p>
+    </section>
+    <section>
+      <h2>โอนให้ใคร</h2>
+      <ul class="transfers" id="transfers"></ul>
+      <div class="tools" style="margin-top:20px">
+        <button class="btn" id="copy">คัดลอกสรุปไปแปะไลน์</button>
+        <span id="copy-msg" class="muted"></span>
+      </div>
+      <textarea id="copy-fallback" hidden readonly style="width:100%;height:8em;font:inherit;margin-top:8px"></textarea>
+      <div class="tools" style="margin-top:20px">
+        <span id="clear-wrap"><button class="btn danger" id="clear">ล้างบิลทั้งหมด</button></span>
+      </div>
+    </section>
+  </div>
+
+  <section class="json">
+    <h2>JSON</h2>
+    <p class="caption">เอาบิลออกไปเก็บ หรือวาง JSON ที่ได้มาเพื่อโหลดกลับเข้าตาราง</p>
+    <div class="json-grid">
+      <div>
+        <div class="tools">
+          <strong>ส่งออก</strong>
+          <button class="btn" id="json-copy">คัดลอก JSON</button>
+          <button class="btn" id="json-save" hidden>บันทึกเป็นไฟล์ .json</button>
+          <span id="json-out-msg" class="muted"></span>
+        </div>
+        <textarea id="json-out" readonly spellcheck="false" aria-label="JSON ของบิลนี้"></textarea>
+      </div>
+      <div>
+        <div class="tools">
+          <strong>นำเข้า</strong>
+          <label class="btn" for="json-file">เลือกไฟล์ .json</label>
+          <input type="file" id="json-file" accept=".json,application/json" hidden>
+          <span id="json-in-wrap"><button class="btn" id="json-load">โหลดเข้าตาราง</button></span>
+        </div>
+        <textarea id="json-in" spellcheck="false" aria-label="วาง JSON ที่นี่" placeholder='วาง JSON ที่นี่ เช่น {"people":[{"id":"a","name":"พลับ"}],"items":[...]}'></textarea>
+        <p id="json-in-msg" class="caption"></p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/roughjs@4.6.6/bundled/rough.js"></script>
+<script>
+(() => {
+  const DOC_PATH = "bills/main";
+  const LS_KEY = "badminton-bill-v1";
+  const uid = () => Math.random().toString(36).slice(2, 9);
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const fmt = (n) => "฿" + (Math.round(n * 100) / 100).toLocaleString("th-TH", { maximumFractionDigits: 2 });
+
+  function example() {
+    const p = ["เอ", "บี", "ซี", "ดี"].map(name => ({ id: uid(), name }));
+    const all = p.map(x => x.id);
+    return {
+      example: true,
+      title: "ตัวอย่าง: ตีวันเสาร์",
+      people: p,
+      items: [
+        { id: uid(), name: "ค่าคอร์ด 2 ชม.", price: 360, owner: p[0].id, split: all, paidBy: [p[2].id, p[3].id] },
+        { id: uid(), name: "ลูกแบด 1 หลอด", price: 420, owner: p[1].id, split: all, paidBy: [p[3].id] },
+        { id: uid(), name: "น้ำ + ขนม", price: 90, owner: p[0].id, split: [p[0].id, p[2].id, p[3].id], paidBy: [] },
+      ],
+    };
+  }
+  function blank() {
+    const p = [{ id: uid(), name: "ฉัน" }];
+    return { example: false, title: "", people: p, items: [{ id: uid(), name: "ค่าคอร์ด", price: 0, owner: p[0].id, split: [p[0].id], paidBy: [] }] };
+  }
+
+  // Shared data is untrusted: coerce to the expected shape.
+  function clean(d) {
+    if (!d || typeof d !== "object" || !Array.isArray(d.people)) return null;
+    const people = d.people.filter(x => x && typeof x.id === "string").slice(0, 40)
+      .map(x => ({ id: x.id.slice(0, 20), name: String(x.name ?? "").slice(0, 40) }));
+    const ids = new Set(people.map(x => x.id));
+    const items = (Array.isArray(d.items) ? d.items : []).filter(x => x && typeof x.id === "string").slice(0, 200).map(x => ({
+      id: x.id.slice(0, 20), name: String(x.name ?? "").slice(0, 80),
+      price: Number.isFinite(+x.price) ? +x.price : 0,
+      owner: ids.has(x.owner) ? x.owner : "",
+      split: (Array.isArray(x.split) ? x.split : []).filter(i => ids.has(i)),
+      paidBy: (Array.isArray(x.paidBy) ? x.paidBy : []).filter(i => ids.has(i)),
+    }));
+    // older saves kept one "paid" flag per person: carry it over to every item they share
+    if (Array.isArray(d.paid)) items.forEach(it => d.paid.forEach(i => { if (it.split.includes(i) && !it.paidBy.includes(i)) it.paidBy.push(i); }));
+    return { example: !!d.example, title: String(d.title ?? "").slice(0, 80), people, items };
+  }
+
+  let state = example();
+  let db = null, docRef = null, saveTimer = null, lastSent = "";
+
+  // ---------- money ----------
+  function compute() {
+    // owes = full share owed to others, paidAmt = part already transferred; debt[from][to] counts unpaid only
+    const owes = {}, paidAmt = {}, debt = {}, paidPair = {};
+    state.people.forEach(p => { owes[p.id] = 0; paidAmt[p.id] = 0; debt[p.id] = {}; paidPair[p.id] = {}; });
+    for (const it of state.items) {
+      const n = it.split.length;
+      if (!n || !it.price) continue;
+      const share = it.price / n;
+      for (const pid of it.split) {
+        if (pid === it.owner || !it.owner) continue;
+        owes[pid] += share;
+        if (it.paidBy.includes(pid)) { paidAmt[pid] += share; paidPair[pid][it.owner] = (paidPair[pid][it.owner] || 0) + share; }
+        else debt[pid][it.owner] = (debt[pid][it.owner] || 0) + share;
+      }
+    }
+    // net out pairs (A owes B 100, B owes A 30 -> A owes B 70)
+    const transfers = [];
+    const ids = state.people.map(p => p.id);
+    for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
+      const a = ids[i], b = ids[j];
+      const net = (debt[a][b] || 0) - (debt[b][a] || 0);
+      if (Math.abs(net) > 0.005) transfers.push(net > 0 ? { from: a, to: b, amt: net } : { from: b, to: a, amt: -net });
+    }
+    const netOwe = {};
+    ids.forEach(id => netOwe[id] = 0);
+    transfers.forEach(t => netOwe[t.from] += t.amt);
+    const total = state.items.reduce((s, it) => s + (+it.price || 0), 0);
+    const paidTransfers = [];
+    ids.forEach(a => Object.entries(paidPair[a]).forEach(([b, amt]) => paidTransfers.push({ from: a, to: b, amt })));
+    return { owes, paidAmt, transfers, paidTransfers, netOwe, total };
+  }
+  // a person owes on this item: in the split, and not the one who fronted the money
+  const owesOn = (it, pid) => it.split.includes(pid) && !!it.owner && it.owner !== pid;
+  const nameOf = (id) => (state.people.find(p => p.id === id)?.name || "?");
+
+  // ---------- render ----------
+  function render() {
+    const focus = document.activeElement && document.activeElement.id;
+    const sel = focus && document.activeElement.selectionStart != null ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
+
+    $("session-title").value !== state.title && document.activeElement !== $("session-title") && ($("session-title").value = state.title);
+    $("example-banner").hidden = !state.example;
+
+    const P = state.people;
+    let h = `<thead><tr>
+      <th class="item">รายการ</th><th class="price">ราคา (บาท)</th><th class="owner">ใครออกเงินไปก่อน</th>`;
+    for (const p of P) h += `<th><div class="person-head">
+        <input type="text" class="pname" id="pn-${p.id}" data-person="${p.id}" value="${esc(p.name)}" aria-label="ชื่อเพื่อน" placeholder="ชื่อ">
+        <button class="x" data-del-person="${p.id}" title="ลบ ${esc(p.name)}" aria-label="ลบ ${esc(p.name)}">×</button></div>
+        <div class="sub"><span>หาร</span><span class="ok">จ่าย</span></div></th>`;
+    h += `<th><button class="plus" id="add-person" title="เพิ่มเพื่อน" aria-label="เพิ่มเพื่อน">+</button></th></tr></thead><tbody>`;
+
+    for (const it of state.items) {
+      const share = it.split.length ? it.price / it.split.length : 0;
+      h += `<tr data-item="${it.id}">
+        <td class="item"><input type="text" id="in-${it.id}" data-field="name" value="${esc(it.name)}" placeholder="ชื่อรายการ" aria-label="ชื่อรายการ"></td>
+        <td class="price"><input type="number" id="ip-${it.id}" class="num" data-field="price" value="${it.price || ""}" min="0" step="any" inputmode="decimal" placeholder="0" aria-label="ราคา"></td>
+        <td class="owner"><select id="io-${it.id}" data-field="owner" aria-label="ใครออกเงิน">
+          <option value="">— เลือก —</option>
+          ${P.map(p => `<option value="${p.id}"${p.id === it.owner ? " selected" : ""}>${esc(p.name || "?")}</option>`).join("")}
+        </select></td>`;
+      for (const p of P) {
+        const on = it.split.includes(p.id);
+        const paidBox = owesOn(it, p.id)
+          ? `<input type="checkbox" class="tick paid" id="pd-${it.id}-${p.id}" data-itempaid="${p.id}" ${it.paidBy.includes(p.id) ? "checked" : ""} aria-label="${esc(p.name)} จ่าย ${esc(it.name)} แล้ว">`
+          : `<span class="slot">${on && it.owner === p.id ? "ออกเอง" : ""}</span>`;
+        h += `<td><div class="pair"><input type="checkbox" class="tick" id="ck-${it.id}-${p.id}" data-split="${p.id}" ${on ? "checked" : ""} aria-label="${esc(p.name)} หาร ${esc(it.name)}">${paidBox}</div>
+          <span class="share num" id="sh-${it.id}-${p.id}">${on && share ? fmt(share) : ""}</span></td>`;
+      }
+      h += `<td><button class="x" data-del-item="${it.id}" title="ลบรายการ" aria-label="ลบรายการ ${esc(it.name)}">×</button></td></tr>`;
+    }
+    h += `<tr><td class="item" colspan="${3 + P.length + 1}"><button class="add-row" id="add-item">+ เพิ่มรายการ</button></td></tr>`;
+
+    const c = compute();
+    h += `<tr class="foot sum-row"><td class="label">รวม</td><td class="price num" id="total">${fmt(c.total)}</td><td class="label">ยังค้าง →</td>`;
+    for (const p of P) h += `<td class="num" id="owe-${p.id}"></td>`;
+    h += `<td></td></tr><tr class="foot"><td class="label" colspan="3">จ่ายครบทุกรายการ? <span class="muted">(ติ๊กทีเดียวทั้งคอลัมน์)</span></td>`;
+    for (const p of P) {
+      const mine = state.items.filter(it => owesOn(it, p.id) && it.price);
+      const all = mine.length && mine.every(it => it.paidBy.includes(p.id));
+      h += `<td class="paid-col" id="pc-${p.id}">${mine.length
+        ? `<input type="checkbox" class="tick paid" id="pa-${p.id}" data-paidall="${p.id}" ${all ? "checked" : ""} aria-label="${esc(p.name)} จ่ายครบทุกรายการ">`
+        : `<span class="muted">—</span>`}<span class="stamp"></span></td>`;
+    }
+    h += `<td></td></tr></tbody>`;
+    $("table").innerHTML = h;
+
+    if (focus && $(focus)) { const el = $(focus); el.focus(); if (sel && el.setSelectionRange) try { el.setSelectionRange(sel[0], sel[1]); } catch (e) {} }
+    renderDerived();
+  }
+
+  // parts that change while typing (no table rebuild, keeps focus)
+  function renderDerived() {
+    const c = compute();
+    if ($("total")) $("total").textContent = fmt(c.total);
+    for (const p of state.people) {
+      const cell = $("owe-" + p.id); if (!cell) continue;
+      const left = c.netOwe[p.id], owed = c.owes[p.id], paid = c.paidAmt[p.id];
+      cell.innerHTML = left > 0.005
+        ? `<span class="owe">${fmt(left)}</span>${paid > 0.005 ? `<span class="share">จ่ายแล้ว ${fmt(paid)}</span>` : ""}`
+        : owed > 0.005 ? `<span class="ok">ครบ ✓</span>` : `<span class="muted">—</span>`;
+      const st = document.querySelector(`#pc-${p.id} .stamp`);
+      if (st) st.textContent = owed > 0.005 && left <= 0.005 ? "เคลียร์แล้ว" : "";
+    }
+    for (const it of state.items) {
+      const share = it.split.length ? it.price / it.split.length : 0;
+      for (const p of state.people) {
+        const span = $(`sh-${it.id}-${p.id}`);
+        if (span) span.textContent = it.split.includes(p.id) && share ? fmt(share) : "";
+      }
+    }
+    // keep owner dropdown labels in sync with names
+    document.querySelectorAll('select[data-field="owner"] option[value]').forEach(o => { if (o.value) o.textContent = nameOf(o.value); });
+    renderTransfers(c);
+    if ($("json-out")) refreshJSONOut();
+    drawLines();
+    drawChart(c);
+  }
+
+  function renderTransfers(c) {
+    const ul = $("transfers");
+    const row = (t, done) => `<li class="${done ? "done" : ""}"><strong>${esc(nameOf(t.from))}</strong><span class="arrow">${done ? "โอนแล้ว →" : "โอนให้ →"}</span><strong>${esc(nameOf(t.to))}</strong><span class="amt num ${done ? "ok" : "owe"}">${fmt(t.amt)}</span></li>`;
+    if (!c.transfers.length && !c.paidTransfers.length) { ul.innerHTML = `<li class="muted">ยังไม่มีใครติดเงินใคร ติ๊กช่อง "หาร" ใต้ชื่อเพื่อนเพื่อแบ่งค่าใช้จ่าย</li>`; return; }
+    ul.innerHTML = (c.transfers.length ? "" : `<li class="ok"><strong>เคลียร์ครบทุกคนแล้ว 🎉</strong></li>`)
+      + [...c.transfers].sort((a, b) => b.amt - a.amt).map(t => row(t, false)).join("")
+      + [...c.paidTransfers].sort((a, b) => b.amt - a.amt).map(t => row(t, true)).join("");
+  }
+
+  function summaryText() {
+    const c = compute();
+    const lines = [`🏸 ${state.title || "บิลก๊วนแบด"}`, `รวม ${fmt(c.total)}`, ""];
+    state.items.forEach(it => lines.push(`• ${it.name || "-"} ${fmt(+it.price || 0)} (${nameOf(it.owner)} ออก, หาร ${it.split.length} คน)`));
+    lines.push("");
+    c.transfers.forEach(t => lines.push(`⬜ ${nameOf(t.from)} → ${nameOf(t.to)} ${fmt(t.amt)}`));
+    c.paidTransfers.forEach(t => lines.push(`✅ ${nameOf(t.from)} → ${nameOf(t.to)} ${fmt(t.amt)} (โอนแล้ว)`));
+    return lines.join("\n");
+  }
+
+  // ---------- sketch drawing ----------
+  const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  function drawLines() {
+    const svg = $("lines"), table = $("table");
+    if (!window.rough) { table.style.borderCollapse = "collapse"; return; }
+    svg.innerHTML = "";
+    const W = table.offsetWidth, H = table.offsetHeight;
+    svg.setAttribute("width", W); svg.setAttribute("height", H);
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    const rc = rough.svg(svg), ink = cssVar("--ink"), faint = cssVar("--pencil");
+    const head = table.tHead.rows[0];
+    const rows = [...table.rows];
+    const lastBody = rows.length - 1;
+    // horizontal lines
+    rows.forEach((r, i) => {
+      const y = r.offsetTop + r.offsetHeight;
+      const heavy = i === 0 || r.classList.contains("foot") === false && rows[i + 1]?.classList.contains("sum-row");
+      if (i === lastBody) return;
+      svg.appendChild(rc.line(4, y, W - 4, y, { stroke: heavy ? ink : faint, strokeWidth: heavy ? 2 : 1, roughness: 1.1, seed: 10 + i, bowing: 1.5 }));
+    });
+    // vertical lines between columns (skip the last "+" column)
+    const cells = [...head.cells];
+    const top = 0, bottom = rows[rows.length - 1].offsetTop + rows[rows.length - 1].offsetHeight;
+    cells.slice(1).forEach((cell, i) => {
+      const x = cell.offsetLeft;
+      const strong = i === 2; // after owner column: people start
+      svg.appendChild(rc.line(x, top + 4, x, bottom - 4, { stroke: strong ? ink : faint, strokeWidth: strong ? 2 : 1, roughness: 1.2, seed: 50 + i, bowing: 2 }));
+    });
+    // outer box
+    svg.appendChild(rc.rectangle(2, 2, W - 4, bottom - 4, { stroke: ink, strokeWidth: 2, roughness: 1.4, seed: 7 }));
+  }
+
+  function drawChart(c) {
+    const svg = $("chart");
+    const W = Math.max(280, svg.clientWidth || 500), H = 240;
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("height", H);
+    svg.innerHTML = "";
+    const ink = cssVar("--ink"), pencil = cssVar("--pencil"), owe = cssVar("--owe"), paid = cssVar("--paid"), font = cssVar("--font");
+    const P = state.people;
+    const L = 16, R = 16, T = 34, B = 40;
+    const max = Math.max(1, ...P.map(p => c.owes[p.id]));
+    const text = (x, y, s, opts = {}) => {
+      const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      t.setAttribute("x", x); t.setAttribute("y", y); t.setAttribute("text-anchor", opts.anchor || "middle");
+      t.setAttribute("fill", opts.fill || ink); t.setAttribute("font-family", font); t.setAttribute("font-size", opts.size || 14);
+      if (opts.weight) t.setAttribute("font-weight", opts.weight);
+      t.textContent = s; svg.appendChild(t);
+    };
+    if (!window.rough) { text(W / 2, H / 2, "โหลดตัววาดกราฟไม่สำเร็จ", { fill: pencil }); return; }
+    const rc = rough.svg(svg);
+    svg.appendChild(rc.line(L, H - B, W - R, H - B, { stroke: ink, strokeWidth: 2, roughness: 1.3, seed: 3 }));
+    if (!P.length) return;
+    const slot = (W - L - R) / P.length, bw = Math.min(64, slot * 0.6);
+    let top = null;
+    P.forEach((p, i) => {
+      const owed = c.owes[p.id], paidA = c.paidAmt[p.id], left = owed - paidA;
+      const cx = L + slot * i + slot / 2, scale = (H - T - B) / max;
+      const hp = paidA > 0.005 ? Math.max(3, paidA * scale) : 0, hu = left > 0.005 ? Math.max(3, left * scale) : 0;
+      if (hp) svg.appendChild(rc.rectangle(cx - bw / 2, H - B - hp, bw, hp, { stroke: ink, strokeWidth: 1.5, roughness: 1.6, seed: 100 + i, fill: paid, fillStyle: "cross-hatch", hachureGap: 6, fillWeight: 1.2 }));
+      if (hu) svg.appendChild(rc.rectangle(cx - bw / 2, H - B - hp - hu, bw, hu, { stroke: ink, strokeWidth: 1.5, roughness: 1.6, seed: 200 + i, fill: owe, fillStyle: "hachure", hachureGap: 6, fillWeight: 1.2 }));
+      const yTop = H - B - hp - hu;
+      if (hu) {
+        text(cx, yTop - 8, fmt(left), { size: 13, weight: 700, fill: owe });
+        if (!top || left > top.amt) top = { cx, y: yTop, amt: left, i };
+      } else if (hp) text(cx, yTop - 8, "ครบ ✓", { size: 13, weight: 700, fill: paid });
+      else text(cx, H - B - 8, "0", { size: 13, fill: pencil });
+      const nm = p.name || "?";
+      text(cx, H - B + 22, nm.length > 8 ? nm.slice(0, 7) + "…" : nm, { size: 14 });
+    });
+    // xkcd-style annotation on the biggest unpaid debt
+    if (top && P.length > 1) {
+      const right = top.i < P.length / 2;
+      const lx = top.cx + (right ? 70 : -70), ly = 16;
+      svg.appendChild(rc.curve([[lx + (right ? -10 : 10), ly + 6], [top.cx + (right ? 30 : -30), ly + 10], [top.cx + (right ? 10 : -10), top.y - 24]], { stroke: pencil, roughness: 1, seed: 9 }));
+      text(lx, ly, "ค้างเยอะสุด!", { size: 13, fill: pencil, anchor: right ? "start" : "end" });
+    }
+  }
+
+  // ---------- persistence ----------
+  function setStatus(live, msg) { $("status").classList.toggle("live", live); $("status-text").textContent = msg; }
+  function save() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
+    if (!docRef) return;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+      const body = JSON.parse(JSON.stringify(state));
+      lastSent = JSON.stringify(body);
+      try { await docRef.set(body); setStatus(true, "บันทึกออนไลน์แล้ว · เพื่อนเห็นตรงกัน"); }
+      catch (e) { setStatus(false, e && e.code === "permission_denied" ? "ดูได้อย่างเดียว (ไม่มีสิทธิ์แก้)" : "บันทึกออนไลน์ไม่สำเร็จ · เก็บไว้ในเครื่องนี้"); }
+    }, 450);
+  }
+  function change(full = true) { full ? render() : renderDerived(); save(); }
+
+  // ---------- events ----------
+  document.addEventListener("input", (e) => {
+    const t = e.target;
+    if (t.id === "session-title") { state.title = t.value; return change(false); }
+    if (t.dataset.person) { const p = state.people.find(x => x.id === t.dataset.person); if (p) p.name = t.value; return change(false); }
+    const tr = t.closest("tr[data-item]");
+    if (tr && (t.dataset.field === "name" || t.dataset.field === "price")) {
+      const it = state.items.find(x => x.id === tr.dataset.item); if (!it) return;
+      if (t.dataset.field === "name") it.name = t.value; else it.price = Math.max(0, parseFloat(t.value) || 0);
+      change(false);
+    }
+  });
+  document.addEventListener("change", (e) => {
+    const t = e.target, tr = t.closest("tr[data-item]");
+    const it = tr && state.items.find(x => x.id === tr.dataset.item);
+    if (it && t.dataset.field === "owner") { it.owner = t.value; return change(); }
+    if (it && t.dataset.split) {
+      const id = t.dataset.split;
+      it.split = t.checked ? [...new Set([...it.split, id])] : it.split.filter(x => x !== id);
+      return change();
+    }
+    if (it && t.dataset.itempaid) {
+      const id = t.dataset.itempaid;
+      it.paidBy = t.checked ? [...new Set([...it.paidBy, id])] : it.paidBy.filter(x => x !== id);
+      return change();
+    }
+    if (t.dataset.paidall) {
+      const id = t.dataset.paidall;
+      state.items.forEach(x => { if (owesOn(x, id)) x.paidBy = t.checked ? [...new Set([...x.paidBy, id])] : x.paidBy.filter(y => y !== id); });
+      return change();
+    }
+  });
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.id === "add-person") {
+      const p = { id: uid(), name: "" };
+      state.people.push(p);
+      state.items.forEach(it => { if (!it.owner) it.owner = p.id; });
+      change(); $("pn-" + p.id)?.focus(); return;
+    }
+    if (b.id === "add-item") {
+      const it = { id: uid(), name: "", price: 0, owner: state.people[0]?.id || "", split: state.people.map(p => p.id), paidBy: [] };
+      state.items.push(it); change(); $("in-" + it.id)?.focus(); return;
+    }
+    if (b.dataset.delPerson) {
+      const id = b.dataset.delPerson;
+      state.people = state.people.filter(p => p.id !== id);
+      state.items.forEach(it => { it.split = it.split.filter(x => x !== id); it.paidBy = it.paidBy.filter(x => x !== id); if (it.owner === id) it.owner = ""; });
+      return change();
+    }
+    if (b.dataset.delItem) { state.items = state.items.filter(it => it.id !== b.dataset.delItem); return change(); }
+    if (b.id === "start-fresh") { state = blank(); return change(); }
+    if (b.id === "clear") {
+      $("clear-wrap").innerHTML = `<span class="confirm">ล้างทุกอย่างจริงไหม? <button class="btn danger" id="clear-yes">ล้างเลย</button><button class="btn" id="clear-no">ไม่</button></span>`;
+      return;
+    }
+    if (b.id === "clear-yes" || b.id === "clear-no") {
+      if (b.id === "clear-yes") { state = blank(); change(); }
+      $("clear-wrap").innerHTML = `<button class="btn danger" id="clear">ล้างบิลทั้งหมด</button>`;
+      return;
+    }
+    if (b.id === "copy") {
+      const txt = summaryText();
+      const fb = () => { const ta = $("copy-fallback"); ta.value = txt; ta.hidden = false; ta.select(); $("copy-msg").textContent = "กดค้างเพื่อคัดลอกข้อความด้านล่าง"; };
+      try { navigator.clipboard.writeText(txt).then(() => { $("copy-msg").textContent = "คัดลอกแล้ว ✓"; }, fb); } catch (err) { fb(); }
+    }
+  });
+  // once a viewer edits the example, it stops being "example" only via start-fresh; editing keeps the banner so they know
+  let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(renderDerived, 120); });
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderDerived);
+  new MutationObserver(renderDerived).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  // ---------- JSON in / out ----------
+  function exportJSON() {
+    const { example, ...rest } = state;
+    return JSON.stringify({ format: "badminton-bill", version: 2, exportedAt: new Date().toISOString(), ...rest }, null, 2);
+  }
+  function refreshJSONOut() { const ta = $("json-out"); if (document.activeElement !== ta) ta.value = exportJSON(); }
+  let pendingImport = null;
+  function parseImport(text) {
+    let raw;
+    try { raw = JSON.parse(text); } catch (e) { return { err: "อ่าน JSON ไม่ได้: " + e.message }; }
+    const s = clean(raw);
+    if (!s) return { err: 'JSON ต้องเป็น object ที่มี "people" เป็น array (เช่น ที่ได้จากปุ่มส่งออก)' };
+    if (!s.people.length) return { err: "ไม่พบรายชื่อใน people" };
+    s.example = false;
+    return { state: s };
+  }
+  function inMsg(text, cls) { const m = $("json-in-msg"); m.textContent = text; m.className = "caption " + (cls || ""); }
+  function resetLoadBtn() { $("json-in-wrap").innerHTML = `<button class="btn" id="json-load">โหลดเข้าตาราง</button>`; pendingImport = null; }
+  $("json-file").addEventListener("change", (e) => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    if (f.size > 1e6) { inMsg("ไฟล์ใหญ่เกิน 1 MB", "err"); return; }
+    const r = new FileReader();
+    r.onload = () => { $("json-in").value = String(r.result || ""); inMsg(`อ่านไฟล์ ${f.name} แล้ว กด "โหลดเข้าตาราง" เพื่อใช้`); };
+    r.onerror = () => inMsg("อ่านไฟล์ไม่สำเร็จ", "err");
+    r.readAsText(f); e.target.value = "";
+  });
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.id === "json-copy") {
+      const txt = exportJSON(), ta = $("json-out"); ta.value = txt;
+      const fb = () => { ta.focus(); ta.select(); $("json-out-msg").textContent = "เลือกข้อความให้แล้ว กดคัดลอกเอง"; };
+      try { navigator.clipboard.writeText(txt).then(() => { $("json-out-msg").textContent = "คัดลอกแล้ว ✓"; }, fb); } catch (err) { fb(); }
+    }
+    if (b.id === "json-save" && downloads) {
+      const name = "badminton-bill-" + new Date().toISOString().slice(0, 10) + ".json";
+      downloads.save({ filename: name, data: new Blob([exportJSON()], { type: "application/json" }) })
+        .then(() => { $("json-out-msg").textContent = "บันทึกแล้ว ✓"; })
+        .catch(err => { $("json-out-msg").textContent = err && err.code === "declined" ? "ยกเลิกการบันทึก" : "บันทึกไฟล์ไม่ได้ ใช้ปุ่มคัดลอกแทน"; });
+    }
+    if (b.id === "json-load") {
+      const r = parseImport($("json-in").value.trim());
+      if (r.err) { inMsg(r.err, "err"); return; }
+      pendingImport = r.state;
+      const n = r.state.people.length, m = r.state.items.length;
+      $("json-in-wrap").innerHTML = `<span class="confirm">แทนที่บิลปัจจุบันด้วย ${n} คน ${m} รายการ? <button class="btn danger" id="json-yes">แทนที่เลย</button><button class="btn" id="json-no">ไม่</button></span>`;
+      inMsg("");
+    }
+    if (b.id === "json-yes" && pendingImport) { state = pendingImport; resetLoadBtn(); change(); inMsg("โหลดเข้าตารางแล้ว ✓", "good"); }
+    if (b.id === "json-no") resetLoadBtn();
+  });
+  let downloads = null;
+  if (window.claude && window.claude.use) window.claude.use("downloads").then(d => { downloads = d; $("json-save").hidden = !d; });
+
+  // ---------- boot ----------
+  try { const s = clean(JSON.parse(localStorage.getItem(LS_KEY) || "null")); if (s) state = s; } catch (e) {}
+  render();
+  document.fonts && document.fonts.ready.then(renderDerived);
+  setStatus(false, "เก็บไว้ในเครื่องนี้");
+
+  if (window.claude && window.claude.use) {
+    window.claude.use("db").then(d => {
+      if (!d) { setStatus(false, "ออฟไลน์ · เก็บไว้ในเครื่องนี้เท่านั้น"); return; }
+      db = d; docRef = db.doc(DOC_PATH);
+      let first = true;
+      docRef.onSnapshot(snap => {
+        if (snap.metadata && snap.metadata.hasPendingWrites) return;
+        if (!snap.exists) {
+          if (first) { setStatus(true, "ออนไลน์ · บิลยังว่าง แก้อะไรก็ได้เพื่อเริ่ม"); }
+          first = false; return;
+        }
+        first = false;
+        const s = clean(snap.data());
+        if (!s) return;
+        const incoming = JSON.stringify(s);
+        if (incoming === lastSent || incoming === JSON.stringify(state)) { setStatus(true, "ออนไลน์ · เพื่อนเห็นตรงกัน"); return; }
+        state = s;
+        try { localStorage.setItem(LS_KEY, incoming); } catch (e) {}
+        render();
+        setStatus(true, "ออนไลน์ · อัปเดตล่าสุดจากเพื่อน");
+      }, () => setStatus(false, "หลุดการเชื่อมต่อ · เก็บไว้ในเครื่องนี้"));
+    });
+  }
+})();
+</script>
