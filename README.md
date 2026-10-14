@@ -2,8 +2,6 @@
 
 A single-page tool for splitting badminton court costs with friends, drawn in an xkcd-style sketch look (rough.js).
 
-**Live (synced) version:** https://claude.ai/artifact/D8zw1nrA2fBedYgvjQJNWK
-
 - One row per expense: name, price, and who fronted the money
 - One column per friend (add with **+**), each cell has two checkboxes: **หาร** (shares this item) and **จ่าย** (has paid for it)
 - Bottom rows show what each person still owes, plus a "paid everything" toggle
