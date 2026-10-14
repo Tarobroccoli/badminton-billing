@@ -25,6 +25,11 @@ header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content:
 h1 { font-size: clamp(28px, 5vw, 40px); margin: 0; line-height: 1.1; text-wrap: balance; }
 h1 small { display: block; font-size: 15px; font-weight: 400; color: var(--pencil); margin-top: 6px; }
 h2 { font-size: 22px; margin: 0 0 8px; }
+.head-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; margin-left: auto; }
+.lang { display: inline-flex; border: 2px solid var(--ink); border-radius: var(--wobble); overflow: hidden; }
+.lang button { padding: 2px 12px; font-weight: 700; font-size: 14px; color: var(--pencil); }
+.lang button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.lang button:not([aria-pressed="true"]):hover { background: var(--hl); color: var(--ink); }
 .status { font-size: 13px; color: var(--pencil); display: flex; align-items: center; gap: 8px; }
 .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--pencil); }
 .status.live .dot { background: var(--paid); }
@@ -114,15 +119,20 @@ label.btn { cursor: pointer; }
 
 <div class="wrap">
   <header>
-    <h1>บิลก๊วนแบด 🏸
-      <small><input type="text" id="session-title" aria-label="ชื่อรอบตี" placeholder="เช่น ตีวันเสาร์ 12 ต.ค." style="width:min(22em,80vw)"></small>
+    <h1><span data-i18n="appTitle">บิลก๊วนแบด</span> 🏸
+      <small><input type="text" id="session-title" data-i18n-aria="sessionAria" data-i18n-ph="sessionPh" aria-label="ชื่อรอบตี" placeholder="เช่น ตีวันเสาร์ 12 ต.ค." style="width:min(22em,80vw)"></small>
     </h1>
-    <div class="status" id="status"><span class="dot"></span><span id="status-text">กำลังเชื่อมต่อ…</span></div>
+    <div class="head-right">
+      <div class="lang" role="group" aria-label="Language / ภาษา">
+        <button type="button" data-lang="th" aria-pressed="true">TH</button><button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+      <div class="status" id="status"><span class="dot"></span><span id="status-text">กำลังเชื่อมต่อ…</span></div>
+    </div>
   </header>
 
   <div class="banner" id="example-banner" hidden>
-    <span>นี่คือ<strong>ข้อมูลตัวอย่าง</strong> แก้ชื่อ ราคา หรือกดล้างเพื่อเริ่มบิลจริง</span>
-    <button class="btn" id="start-fresh">เริ่มบิลใหม่</button>
+    <span data-i18n-html="exampleBanner">นี่คือ<strong>ข้อมูลตัวอย่าง</strong> แก้ชื่อ ราคา หรือกดล้างเพื่อเริ่มบิลจริง</span>
+    <button class="btn" id="start-fresh" data-i18n="startFresh">เริ่มบิลใหม่</button>
   </div>
 
   <section>
@@ -136,45 +146,45 @@ label.btn { cursor: pointer; }
 
   <div class="below">
     <section>
-      <h2>ใครต้องจ่ายเท่าไหร่</h2>
-      <svg id="chart" role="img" aria-label="กราฟยอดที่แต่ละคนต้องจ่าย"></svg>
-      <p class="caption">แท่งลายเขียว = จ่ายแล้ว · แท่งลายแดง = ยังค้าง</p>
+      <h2 data-i18n="chartTitle">ใครต้องจ่ายเท่าไหร่</h2>
+      <svg id="chart" role="img" data-i18n-aria="chartAria" aria-label="กราฟยอดที่แต่ละคนต้องจ่าย"></svg>
+      <p class="caption" data-i18n="chartCaption">แท่งลายเขียว = จ่ายแล้ว · แท่งลายแดง = ยังค้าง</p>
     </section>
     <section>
-      <h2>โอนให้ใคร</h2>
+      <h2 data-i18n="transfersTitle">โอนให้ใคร</h2>
       <ul class="transfers" id="transfers"></ul>
       <div class="tools" style="margin-top:20px">
-        <button class="btn" id="copy">คัดลอกสรุปไปแปะไลน์</button>
+        <button class="btn" id="copy" data-i18n="copySummary">คัดลอกสรุปไปแปะไลน์</button>
         <span id="copy-msg" class="muted"></span>
       </div>
       <textarea id="copy-fallback" hidden readonly style="width:100%;height:8em;font:inherit;margin-top:8px"></textarea>
       <div class="tools" style="margin-top:20px">
-        <span id="clear-wrap"><button class="btn danger" id="clear">ล้างบิลทั้งหมด</button></span>
+        <span id="clear-wrap"><button class="btn danger" id="clear" data-i18n="clearAll">ล้างบิลทั้งหมด</button></span>
       </div>
     </section>
   </div>
 
   <section class="json">
     <h2>JSON</h2>
-    <p class="caption">เอาบิลออกไปเก็บ หรือวาง JSON ที่ได้มาเพื่อโหลดกลับเข้าตาราง</p>
+    <p class="caption" data-i18n="jsonCaption">เอาบิลออกไปเก็บ หรือวาง JSON ที่ได้มาเพื่อโหลดกลับเข้าตาราง</p>
     <div class="json-grid">
       <div>
         <div class="tools">
-          <strong>ส่งออก</strong>
-          <button class="btn" id="json-copy">คัดลอก JSON</button>
-          <button class="btn" id="json-save" hidden>บันทึกเป็นไฟล์ .json</button>
+          <strong data-i18n="export">ส่งออก</strong>
+          <button class="btn" id="json-copy" data-i18n="copyJson">คัดลอก JSON</button>
+          <button class="btn" id="json-save" data-i18n="saveJson" hidden>บันทึกเป็นไฟล์ .json</button>
           <span id="json-out-msg" class="muted"></span>
         </div>
-        <textarea id="json-out" readonly spellcheck="false" aria-label="JSON ของบิลนี้"></textarea>
+        <textarea id="json-out" readonly spellcheck="false" data-i18n-aria="jsonOutAria" aria-label="JSON ของบิลนี้"></textarea>
       </div>
       <div>
         <div class="tools">
-          <strong>นำเข้า</strong>
-          <label class="btn" for="json-file">เลือกไฟล์ .json</label>
+          <strong data-i18n="import">นำเข้า</strong>
+          <label class="btn" for="json-file" data-i18n="chooseFile">เลือกไฟล์ .json</label>
           <input type="file" id="json-file" accept=".json,application/json" hidden>
-          <span id="json-in-wrap"><button class="btn" id="json-load">โหลดเข้าตาราง</button></span>
+          <span id="json-in-wrap"><button class="btn" id="json-load" data-i18n="loadJson">โหลดเข้าตาราง</button></span>
         </div>
-        <textarea id="json-in" spellcheck="false" aria-label="วาง JSON ที่นี่" placeholder='วาง JSON ที่นี่ เช่น {"people":[{"id":"a","name":"พลับ"}],"items":[...]}'></textarea>
+        <textarea id="json-in" spellcheck="false" data-i18n-aria="jsonInAria" data-i18n-ph="jsonInPh" aria-label="วาง JSON ที่นี่" placeholder='วาง JSON ที่นี่ เช่น {"people":[{"id":"a","name":"พลับ"}],"items":[...]}'></textarea>
         <p id="json-in-msg" class="caption"></p>
       </div>
     </div>
@@ -189,25 +199,98 @@ label.btn { cursor: pointer; }
   const uid = () => Math.random().toString(36).slice(2, 9);
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const fmt = (n) => "฿" + (Math.round(n * 100) / 100).toLocaleString("th-TH", { maximumFractionDigits: 2 });
+  const fmt = (n) => "฿" + (Math.round(n * 100) / 100).toLocaleString(lang === "en" ? "en-US" : "th-TH", { maximumFractionDigits: 2 });
+
+  // ---------- language ----------
+  const I18N = {
+    th: {
+      appTitle: "บิลก๊วนแบด", sessionAria: "ชื่อรอบตี", sessionPh: "เช่น ตีวันเสาร์ 12 ต.ค.",
+      exampleBanner: "นี่คือ<strong>ข้อมูลตัวอย่าง</strong> แก้ชื่อ ราคา หรือกดล้างเพื่อเริ่มบิลจริง", startFresh: "เริ่มบิลใหม่",
+      chartTitle: "ใครต้องจ่ายเท่าไหร่", chartAria: "กราฟยอดที่แต่ละคนต้องจ่าย", chartCaption: "แท่งลายเขียว = จ่ายแล้ว · แท่งลายแดง = ยังค้าง",
+      transfersTitle: "โอนให้ใคร", copySummary: "คัดลอกสรุปไปแปะไลน์", clearAll: "ล้างบิลทั้งหมด",
+      jsonCaption: "เอาบิลออกไปเก็บ หรือวาง JSON ที่ได้มาเพื่อโหลดกลับเข้าตาราง", export: "ส่งออก", copyJson: "คัดลอก JSON",
+      saveJson: "บันทึกเป็นไฟล์ .json", jsonOutAria: "JSON ของบิลนี้", import: "นำเข้า", chooseFile: "เลือกไฟล์ .json",
+      loadJson: "โหลดเข้าตาราง", jsonInAria: "วาง JSON ที่นี่", jsonInPh: 'วาง JSON ที่นี่ เช่น {"people":[{"id":"a","name":"พลับ"}],"items":[...]}',
+      exPeople: ["เอ", "บี", "ซี", "ดี"], exTitle: "ตัวอย่าง: ตีวันเสาร์", exCourt: "ค่าคอร์ด 2 ชม.", exShuttle: "ลูกแบด 1 หลอด", exSnacks: "น้ำ + ขนม",
+      me: "ฉัน", court: "ค่าคอร์ด",
+      colItem: "รายการ", colPrice: "ราคา (บาท)", colOwner: "ใครออกเงินไปก่อน", friendName: "ชื่อเพื่อน", namePh: "ชื่อ",
+      remove: (n) => `ลบ ${n}`, split: "หาร", pay: "จ่าย", addFriend: "เพิ่มเพื่อน", itemPh: "ชื่อรายการ", price: "ราคา",
+      whoPaid: "ใครออกเงิน", choose: "— เลือก —", paidItem: (p, i) => `${p} จ่าย ${i} แล้ว`, fronted: "ออกเอง", splitItem: (p, i) => `${p} หาร ${i}`,
+      delItem: "ลบรายการ", delItemNamed: (i) => `ลบรายการ ${i}`, addItem: "+ เพิ่มรายการ", total: "รวม", stillOwes: "ยังค้าง →",
+      paidAllQ: "จ่ายครบทุกรายการ?", paidAllHint: "(ติ๊กทีเดียวทั้งคอลัมน์)", paidAllAria: (p) => `${p} จ่ายครบทุกรายการ`,
+      paidSoFar: (a) => `จ่ายแล้ว ${a}`, done: "ครบ ✓", cleared: "เคลียร์แล้ว", sentTo: "โอนแล้ว →", payTo: "โอนให้ →",
+      noDebts: 'ยังไม่มีใครติดเงินใคร ติ๊กช่อง "หาร" ใต้ชื่อเพื่อนเพื่อแบ่งค่าใช้จ่าย', allClear: "เคลียร์ครบทุกคนแล้ว 🎉",
+      sumLine: (it, price, owner, n) => `• ${it} ${price} (${owner} ออก, หาร ${n} คน)`, sentNote: "(โอนแล้ว)",
+      chartFail: "โหลดตัววาดกราฟไม่สำเร็จ", mostOwed: "ค้างเยอะสุด!",
+      stSaved: "บันทึกออนไลน์แล้ว · เพื่อนเห็นตรงกัน", stReadOnly: "ดูได้อย่างเดียว (ไม่มีสิทธิ์แก้)", stSaveFail: "บันทึกออนไลน์ไม่สำเร็จ · เก็บไว้ในเครื่องนี้",
+      stLocal: "เก็บไว้ในเครื่องนี้", stOffline: "ออฟไลน์ · เก็บไว้ในเครื่องนี้เท่านั้น", stEmpty: "ออนไลน์ · บิลยังว่าง แก้อะไรก็ได้เพื่อเริ่ม",
+      stLive: "ออนไลน์ · เพื่อนเห็นตรงกัน", stRemote: "ออนไลน์ · อัปเดตล่าสุดจากเพื่อน", stLost: "หลุดการเชื่อมต่อ · เก็บไว้ในเครื่องนี้", stConnecting: "กำลังเชื่อมต่อ…",
+      clearQ: "ล้างทุกอย่างจริงไหม?", clearYes: "ล้างเลย", no: "ไม่",
+      copyHold: "กดค้างเพื่อคัดลอกข้อความด้านล่าง", copied: "คัดลอกแล้ว ✓", selectedCopy: "เลือกข้อความให้แล้ว กดคัดลอกเอง",
+      saved: "บันทึกแล้ว ✓", saveCancel: "ยกเลิกการบันทึก", saveFail: "บันทึกไฟล์ไม่ได้ ใช้ปุ่มคัดลอกแทน",
+      badJson: (m) => "อ่าน JSON ไม่ได้: " + m, badShape: 'JSON ต้องเป็น object ที่มี "people" เป็น array (เช่น ที่ได้จากปุ่มส่งออก)', noPeople: "ไม่พบรายชื่อใน people",
+      tooBig: "ไฟล์ใหญ่เกิน 1 MB", fileRead: (f) => `อ่านไฟล์ ${f} แล้ว กด "โหลดเข้าตาราง" เพื่อใช้`, fileFail: "อ่านไฟล์ไม่สำเร็จ",
+      replaceQ: (n, m) => `แทนที่บิลปัจจุบันด้วย ${n} คน ${m} รายการ?`, replaceYes: "แทนที่เลย", loaded: "โหลดเข้าตารางแล้ว ✓",
+    },
+    en: {
+      appTitle: "Badminton Bill", sessionAria: "Session name", sessionPh: "e.g. Saturday game, Oct 12",
+      exampleBanner: "This is <strong>sample data</strong>. Edit names and prices, or clear it to start a real bill.", startFresh: "Start a new bill",
+      chartTitle: "Who owes what", chartAria: "Chart of how much each person owes", chartCaption: "Green hatching = paid · Red hatching = still owed",
+      transfersTitle: "Who pays whom", copySummary: "Copy summary for the group chat", clearAll: "Clear the whole bill",
+      jsonCaption: "Save the bill elsewhere, or paste JSON to load it back into the table.", export: "Export", copyJson: "Copy JSON",
+      saveJson: "Save as .json file", jsonOutAria: "JSON for this bill", import: "Import", chooseFile: "Choose .json file",
+      loadJson: "Load into table", jsonInAria: "Paste JSON here", jsonInPh: 'Paste JSON here, e.g. {"people":[{"id":"a","name":"Plub"}],"items":[...]}',
+      exPeople: ["Ann", "Ben", "Cat", "Dan"], exTitle: "Sample: Saturday game", exCourt: "Court, 2 hrs", exShuttle: "Shuttlecocks, 1 tube", exSnacks: "Drinks + snacks",
+      me: "Me", court: "Court",
+      colItem: "Item", colPrice: "Price (THB)", colOwner: "Who paid upfront", friendName: "Friend's name", namePh: "Name",
+      remove: (n) => `Remove ${n}`, split: "Split", pay: "Paid", addFriend: "Add friend", itemPh: "Item name", price: "Price",
+      whoPaid: "Who paid upfront", choose: "— choose —", paidItem: (p, i) => `${p} has paid for ${i}`, fronted: "paid it", splitItem: (p, i) => `${p} splits ${i}`,
+      delItem: "Delete item", delItemNamed: (i) => `Delete item ${i}`, addItem: "+ Add item", total: "Total", stillOwes: "Still owes →",
+      paidAllQ: "Paid for everything?", paidAllHint: "(ticks the whole column)", paidAllAria: (p) => `${p} has paid for everything`,
+      paidSoFar: (a) => `paid ${a}`, done: "Done ✓", cleared: "settled", sentTo: "paid →", payTo: "pays →",
+      noDebts: 'Nobody owes anyone yet. Tick "Split" under a friend\'s name to share a cost.', allClear: "Everyone is settled 🎉",
+      sumLine: (it, price, owner, n) => `• ${it} ${price} (${owner} paid, split ${n} ways)`, sentNote: "(paid)",
+      chartFail: "Couldn't load the chart drawer", mostOwed: "owes the most!",
+      stSaved: "Saved online · everyone sees the same bill", stReadOnly: "View only (no edit access)", stSaveFail: "Couldn't save online · kept on this device",
+      stLocal: "Saved on this device", stOffline: "Offline · saved on this device only", stEmpty: "Online · bill is empty, edit anything to start",
+      stLive: "Online · everyone sees the same bill", stRemote: "Online · just updated by a friend", stLost: "Connection lost · saved on this device", stConnecting: "Connecting…",
+      clearQ: "Clear everything?", clearYes: "Clear it", no: "No",
+      copyHold: "Long-press to copy the text below", copied: "Copied ✓", selectedCopy: "Text selected, copy it manually",
+      saved: "Saved ✓", saveCancel: "Save cancelled", saveFail: "Couldn't save the file, use Copy instead",
+      badJson: (m) => "Couldn't read JSON: " + m, badShape: 'JSON must be an object with a "people" array (like the one from Export)', noPeople: 'No names found in "people"',
+      tooBig: "File is larger than 1 MB", fileRead: (f) => `Read ${f}. Press "Load into table" to use it.`, fileFail: "Couldn't read the file",
+      replaceQ: (n, m) => `Replace the current bill with ${n} people and ${m} items?`, replaceYes: "Replace", loaded: "Loaded into table ✓",
+    },
+  };
+  let lang = "th";
+  try { const l = localStorage.getItem("badminton-bill-lang"); if (l === "en" || l === "th") lang = l; } catch (e) {}
+  const t = (k, ...a) => { const v = I18N[lang][k] ?? I18N.th[k]; return typeof v === "function" ? v(...a) : v; };
+  function applyStatic() {
+    document.documentElement.lang = lang;
+    document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll("[data-i18n-html]").forEach(el => { el.innerHTML = t(el.dataset.i18nHtml); });
+    document.querySelectorAll("[data-i18n-ph]").forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+    document.querySelectorAll("[data-i18n-aria]").forEach(el => { el.setAttribute("aria-label", t(el.dataset.i18nAria)); });
+    document.querySelectorAll(".lang button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.lang === lang)));
+  }
 
   function example() {
-    const p = ["เอ", "บี", "ซี", "ดี"].map(name => ({ id: uid(), name }));
+    const p = t("exPeople").map(name => ({ id: uid(), name }));
     const all = p.map(x => x.id);
     return {
       example: true,
-      title: "ตัวอย่าง: ตีวันเสาร์",
+      title: t("exTitle"),
       people: p,
       items: [
-        { id: uid(), name: "ค่าคอร์ด 2 ชม.", price: 360, owner: p[0].id, split: all, paidBy: [p[2].id, p[3].id] },
-        { id: uid(), name: "ลูกแบด 1 หลอด", price: 420, owner: p[1].id, split: all, paidBy: [p[3].id] },
-        { id: uid(), name: "น้ำ + ขนม", price: 90, owner: p[0].id, split: [p[0].id, p[2].id, p[3].id], paidBy: [] },
+        { id: uid(), name: t("exCourt"), price: 360, owner: p[0].id, split: all, paidBy: [p[2].id, p[3].id] },
+        { id: uid(), name: t("exShuttle"), price: 420, owner: p[1].id, split: all, paidBy: [p[3].id] },
+        { id: uid(), name: t("exSnacks"), price: 90, owner: p[0].id, split: [p[0].id, p[2].id, p[3].id], paidBy: [] },
       ],
     };
   }
   function blank() {
-    const p = [{ id: uid(), name: "ฉัน" }];
-    return { example: false, title: "", people: p, items: [{ id: uid(), name: "ค่าคอร์ด", price: 0, owner: p[0].id, split: [p[0].id], paidBy: [] }] };
+    const p = [{ id: uid(), name: t("me") }];
+    return { example: false, title: "", people: p, items: [{ id: uid(), name: t("court"), price: 0, owner: p[0].id, split: [p[0].id], paidBy: [] }] };
   }
 
   // Shared data is untrusted: coerce to the expected shape.
@@ -257,7 +340,7 @@ label.btn { cursor: pointer; }
     }
     const netOwe = {};
     ids.forEach(id => netOwe[id] = 0);
-    transfers.forEach(t => netOwe[t.from] += t.amt);
+    transfers.forEach(tr => netOwe[tr.from] += tr.amt);
     const total = state.items.reduce((s, it) => s + (+it.price || 0), 0);
     const paidTransfers = [];
     ids.forEach(a => Object.entries(paidPair[a]).forEach(([b, amt]) => paidTransfers.push({ from: a, to: b, amt })));
@@ -277,43 +360,43 @@ label.btn { cursor: pointer; }
 
     const P = state.people;
     let h = `<thead><tr>
-      <th class="item">รายการ</th><th class="price">ราคา (บาท)</th><th class="owner">ใครออกเงินไปก่อน</th>`;
+      <th class="item">${t("colItem")}</th><th class="price">${t("colPrice")}</th><th class="owner">${t("colOwner")}</th>`;
     for (const p of P) h += `<th><div class="person-head">
-        <input type="text" class="pname" id="pn-${p.id}" data-person="${p.id}" value="${esc(p.name)}" aria-label="ชื่อเพื่อน" placeholder="ชื่อ">
-        <button class="x" data-del-person="${p.id}" title="ลบ ${esc(p.name)}" aria-label="ลบ ${esc(p.name)}">×</button></div>
-        <div class="sub"><span>หาร</span><span class="ok">จ่าย</span></div></th>`;
-    h += `<th><button class="plus" id="add-person" title="เพิ่มเพื่อน" aria-label="เพิ่มเพื่อน">+</button></th></tr></thead><tbody>`;
+        <input type="text" class="pname" id="pn-${p.id}" data-person="${p.id}" value="${esc(p.name)}" aria-label="${t("friendName")}" placeholder="${t("namePh")}">
+        <button class="x" data-del-person="${p.id}" title="${esc(t("remove", p.name))}" aria-label="${esc(t("remove", p.name))}">×</button></div>
+        <div class="sub"><span>${t("split")}</span><span class="ok">${t("pay")}</span></div></th>`;
+    h += `<th><button class="plus" id="add-person" title="${t("addFriend")}" aria-label="${t("addFriend")}">+</button></th></tr></thead><tbody>`;
 
     for (const it of state.items) {
       const share = it.split.length ? it.price / it.split.length : 0;
       h += `<tr data-item="${it.id}">
-        <td class="item"><input type="text" id="in-${it.id}" data-field="name" value="${esc(it.name)}" placeholder="ชื่อรายการ" aria-label="ชื่อรายการ"></td>
-        <td class="price"><input type="number" id="ip-${it.id}" class="num" data-field="price" value="${it.price || ""}" min="0" step="any" inputmode="decimal" placeholder="0" aria-label="ราคา"></td>
-        <td class="owner"><select id="io-${it.id}" data-field="owner" aria-label="ใครออกเงิน">
-          <option value="">— เลือก —</option>
+        <td class="item"><input type="text" id="in-${it.id}" data-field="name" value="${esc(it.name)}" placeholder="${t("itemPh")}" aria-label="${t("itemPh")}"></td>
+        <td class="price"><input type="number" id="ip-${it.id}" class="num" data-field="price" value="${it.price || ""}" min="0" step="any" inputmode="decimal" placeholder="0" aria-label="${t("price")}"></td>
+        <td class="owner"><select id="io-${it.id}" data-field="owner" aria-label="${t("whoPaid")}">
+          <option value="">${t("choose")}</option>
           ${P.map(p => `<option value="${p.id}"${p.id === it.owner ? " selected" : ""}>${esc(p.name || "?")}</option>`).join("")}
         </select></td>`;
       for (const p of P) {
         const on = it.split.includes(p.id);
         const paidBox = owesOn(it, p.id)
-          ? `<input type="checkbox" class="tick paid" id="pd-${it.id}-${p.id}" data-itempaid="${p.id}" ${it.paidBy.includes(p.id) ? "checked" : ""} aria-label="${esc(p.name)} จ่าย ${esc(it.name)} แล้ว">`
-          : `<span class="slot">${on && it.owner === p.id ? "ออกเอง" : ""}</span>`;
-        h += `<td><div class="pair"><input type="checkbox" class="tick" id="ck-${it.id}-${p.id}" data-split="${p.id}" ${on ? "checked" : ""} aria-label="${esc(p.name)} หาร ${esc(it.name)}">${paidBox}</div>
+          ? `<input type="checkbox" class="tick paid" id="pd-${it.id}-${p.id}" data-itempaid="${p.id}" ${it.paidBy.includes(p.id) ? "checked" : ""} aria-label="${esc(t("paidItem", p.name, it.name))}">`
+          : `<span class="slot">${on && it.owner === p.id ? t("fronted") : ""}</span>`;
+        h += `<td><div class="pair"><input type="checkbox" class="tick" id="ck-${it.id}-${p.id}" data-split="${p.id}" ${on ? "checked" : ""} aria-label="${esc(t("splitItem", p.name, it.name))}">${paidBox}</div>
           <span class="share num" id="sh-${it.id}-${p.id}">${on && share ? fmt(share) : ""}</span></td>`;
       }
-      h += `<td><button class="x" data-del-item="${it.id}" title="ลบรายการ" aria-label="ลบรายการ ${esc(it.name)}">×</button></td></tr>`;
+      h += `<td><button class="x" data-del-item="${it.id}" title="${t("delItem")}" aria-label="${esc(t("delItemNamed", it.name))}">×</button></td></tr>`;
     }
-    h += `<tr><td class="item" colspan="${3 + P.length + 1}"><button class="add-row" id="add-item">+ เพิ่มรายการ</button></td></tr>`;
+    h += `<tr><td class="item" colspan="${3 + P.length + 1}"><button class="add-row" id="add-item">${t("addItem")}</button></td></tr>`;
 
     const c = compute();
-    h += `<tr class="foot sum-row"><td class="label">รวม</td><td class="price num" id="total">${fmt(c.total)}</td><td class="label">ยังค้าง →</td>`;
+    h += `<tr class="foot sum-row"><td class="label">${t("total")}</td><td class="price num" id="total">${fmt(c.total)}</td><td class="label">${t("stillOwes")}</td>`;
     for (const p of P) h += `<td class="num" id="owe-${p.id}"></td>`;
-    h += `<td></td></tr><tr class="foot"><td class="label" colspan="3">จ่ายครบทุกรายการ? <span class="muted">(ติ๊กทีเดียวทั้งคอลัมน์)</span></td>`;
+    h += `<td></td></tr><tr class="foot"><td class="label" colspan="3">${t("paidAllQ")} <span class="muted">${t("paidAllHint")}</span></td>`;
     for (const p of P) {
       const mine = state.items.filter(it => owesOn(it, p.id) && it.price);
       const all = mine.length && mine.every(it => it.paidBy.includes(p.id));
       h += `<td class="paid-col" id="pc-${p.id}">${mine.length
-        ? `<input type="checkbox" class="tick paid" id="pa-${p.id}" data-paidall="${p.id}" ${all ? "checked" : ""} aria-label="${esc(p.name)} จ่ายครบทุกรายการ">`
+        ? `<input type="checkbox" class="tick paid" id="pa-${p.id}" data-paidall="${p.id}" ${all ? "checked" : ""} aria-label="${esc(t("paidAllAria", p.name))}">`
         : `<span class="muted">—</span>`}<span class="stamp"></span></td>`;
     }
     h += `<td></td></tr></tbody>`;
@@ -331,10 +414,10 @@ label.btn { cursor: pointer; }
       const cell = $("owe-" + p.id); if (!cell) continue;
       const left = c.netOwe[p.id], owed = c.owes[p.id], paid = c.paidAmt[p.id];
       cell.innerHTML = left > 0.005
-        ? `<span class="owe">${fmt(left)}</span>${paid > 0.005 ? `<span class="share">จ่ายแล้ว ${fmt(paid)}</span>` : ""}`
-        : owed > 0.005 ? `<span class="ok">ครบ ✓</span>` : `<span class="muted">—</span>`;
+        ? `<span class="owe">${fmt(left)}</span>${paid > 0.005 ? `<span class="share">${t("paidSoFar", fmt(paid))}</span>` : ""}`
+        : owed > 0.005 ? `<span class="ok">${t("done")}</span>` : `<span class="muted">—</span>`;
       const st = document.querySelector(`#pc-${p.id} .stamp`);
-      if (st) st.textContent = owed > 0.005 && left <= 0.005 ? "เคลียร์แล้ว" : "";
+      if (st) st.textContent = owed > 0.005 && left <= 0.005 ? t("cleared") : "";
     }
     for (const it of state.items) {
       const share = it.split.length ? it.price / it.split.length : 0;
@@ -353,20 +436,20 @@ label.btn { cursor: pointer; }
 
   function renderTransfers(c) {
     const ul = $("transfers");
-    const row = (t, done) => `<li class="${done ? "done" : ""}"><strong>${esc(nameOf(t.from))}</strong><span class="arrow">${done ? "โอนแล้ว →" : "โอนให้ →"}</span><strong>${esc(nameOf(t.to))}</strong><span class="amt num ${done ? "ok" : "owe"}">${fmt(t.amt)}</span></li>`;
-    if (!c.transfers.length && !c.paidTransfers.length) { ul.innerHTML = `<li class="muted">ยังไม่มีใครติดเงินใคร ติ๊กช่อง "หาร" ใต้ชื่อเพื่อนเพื่อแบ่งค่าใช้จ่าย</li>`; return; }
-    ul.innerHTML = (c.transfers.length ? "" : `<li class="ok"><strong>เคลียร์ครบทุกคนแล้ว 🎉</strong></li>`)
-      + [...c.transfers].sort((a, b) => b.amt - a.amt).map(t => row(t, false)).join("")
-      + [...c.paidTransfers].sort((a, b) => b.amt - a.amt).map(t => row(t, true)).join("");
+    const row = (tr, done) => `<li class="${done ? "done" : ""}"><strong>${esc(nameOf(tr.from))}</strong><span class="arrow">${done ? t("sentTo") : t("payTo")}</span><strong>${esc(nameOf(tr.to))}</strong><span class="amt num ${done ? "ok" : "owe"}">${fmt(tr.amt)}</span></li>`;
+    if (!c.transfers.length && !c.paidTransfers.length) { ul.innerHTML = `<li class="muted">${esc(t("noDebts"))}</li>`; return; }
+    ul.innerHTML = (c.transfers.length ? "" : `<li class="ok"><strong>${t("allClear")}</strong></li>`)
+      + [...c.transfers].sort((a, b) => b.amt - a.amt).map(tr => row(tr, false)).join("")
+      + [...c.paidTransfers].sort((a, b) => b.amt - a.amt).map(tr => row(tr, true)).join("");
   }
 
   function summaryText() {
     const c = compute();
-    const lines = [`🏸 ${state.title || "บิลก๊วนแบด"}`, `รวม ${fmt(c.total)}`, ""];
-    state.items.forEach(it => lines.push(`• ${it.name || "-"} ${fmt(+it.price || 0)} (${nameOf(it.owner)} ออก, หาร ${it.split.length} คน)`));
+    const lines = [`🏸 ${state.title || t("appTitle")}`, `${t("total")} ${fmt(c.total)}`, ""];
+    state.items.forEach(it => lines.push(t("sumLine", it.name || "-", fmt(+it.price || 0), nameOf(it.owner), it.split.length)));
     lines.push("");
-    c.transfers.forEach(t => lines.push(`⬜ ${nameOf(t.from)} → ${nameOf(t.to)} ${fmt(t.amt)}`));
-    c.paidTransfers.forEach(t => lines.push(`✅ ${nameOf(t.from)} → ${nameOf(t.to)} ${fmt(t.amt)} (โอนแล้ว)`));
+    c.transfers.forEach(tr => lines.push(`⬜ ${nameOf(tr.from)} → ${nameOf(tr.to)} ${fmt(tr.amt)}`));
+    c.paidTransfers.forEach(tr => lines.push(`✅ ${nameOf(tr.from)} → ${nameOf(tr.to)} ${fmt(tr.amt)} ${t("sentNote")}`));
     return lines.join("\n");
   }
 
@@ -418,7 +501,7 @@ label.btn { cursor: pointer; }
       if (opts.weight) t.setAttribute("font-weight", opts.weight);
       t.textContent = s; svg.appendChild(t);
     };
-    if (!window.rough) { text(W / 2, H / 2, "โหลดตัววาดกราฟไม่สำเร็จ", { fill: pencil }); return; }
+    if (!window.rough) { text(W / 2, H / 2, t("chartFail"), { fill: pencil }); return; }
     const rc = rough.svg(svg);
     svg.appendChild(rc.line(L, H - B, W - R, H - B, { stroke: ink, strokeWidth: 2, roughness: 1.3, seed: 3 }));
     if (!P.length) return;
@@ -434,7 +517,7 @@ label.btn { cursor: pointer; }
       if (hu) {
         text(cx, yTop - 8, fmt(left), { size: 13, weight: 700, fill: owe });
         if (!top || left > top.amt) top = { cx, y: yTop, amt: left, i };
-      } else if (hp) text(cx, yTop - 8, "ครบ ✓", { size: 13, weight: 700, fill: paid });
+      } else if (hp) text(cx, yTop - 8, t("done"), { size: 13, weight: 700, fill: paid });
       else text(cx, H - B - 8, "0", { size: 13, fill: pencil });
       const nm = p.name || "?";
       text(cx, H - B + 22, nm.length > 8 ? nm.slice(0, 7) + "…" : nm, { size: 14 });
@@ -444,12 +527,13 @@ label.btn { cursor: pointer; }
       const right = top.i < P.length / 2;
       const lx = top.cx + (right ? 70 : -70), ly = 16;
       svg.appendChild(rc.curve([[lx + (right ? -10 : 10), ly + 6], [top.cx + (right ? 30 : -30), ly + 10], [top.cx + (right ? 10 : -10), top.y - 24]], { stroke: pencil, roughness: 1, seed: 9 }));
-      text(lx, ly, "ค้างเยอะสุด!", { size: 13, fill: pencil, anchor: right ? "start" : "end" });
+      text(lx, ly, t("mostOwed"), { size: 13, fill: pencil, anchor: right ? "start" : "end" });
     }
   }
 
   // ---------- persistence ----------
-  function setStatus(live, msg) { $("status").classList.toggle("live", live); $("status-text").textContent = msg; }
+  let statusKey = "stConnecting";
+  function setStatus(live, key) { statusKey = key; $("status").classList.toggle("live", live); $("status-text").textContent = t(key); }
   function save() {
     try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
     if (!docRef) return;
@@ -457,8 +541,8 @@ label.btn { cursor: pointer; }
     saveTimer = setTimeout(async () => {
       const body = JSON.parse(JSON.stringify(state));
       lastSent = JSON.stringify(body);
-      try { await docRef.set(body); setStatus(true, "บันทึกออนไลน์แล้ว · เพื่อนเห็นตรงกัน"); }
-      catch (e) { setStatus(false, e && e.code === "permission_denied" ? "ดูได้อย่างเดียว (ไม่มีสิทธิ์แก้)" : "บันทึกออนไลน์ไม่สำเร็จ · เก็บไว้ในเครื่องนี้"); }
+      try { await docRef.set(body); setStatus(true, "stSaved"); }
+      catch (e) { setStatus(false, e && e.code === "permission_denied" ? "stReadOnly" : "stSaveFail"); }
     }, 450);
   }
   function change(full = true) { full ? render() : renderDerived(); save(); }
@@ -516,18 +600,18 @@ label.btn { cursor: pointer; }
     if (b.dataset.delItem) { state.items = state.items.filter(it => it.id !== b.dataset.delItem); return change(); }
     if (b.id === "start-fresh") { state = blank(); return change(); }
     if (b.id === "clear") {
-      $("clear-wrap").innerHTML = `<span class="confirm">ล้างทุกอย่างจริงไหม? <button class="btn danger" id="clear-yes">ล้างเลย</button><button class="btn" id="clear-no">ไม่</button></span>`;
+      $("clear-wrap").innerHTML = `<span class="confirm">${t("clearQ")} <button class="btn danger" id="clear-yes">${t("clearYes")}</button><button class="btn" id="clear-no">${t("no")}</button></span>`;
       return;
     }
     if (b.id === "clear-yes" || b.id === "clear-no") {
       if (b.id === "clear-yes") { state = blank(); change(); }
-      $("clear-wrap").innerHTML = `<button class="btn danger" id="clear">ล้างบิลทั้งหมด</button>`;
+      $("clear-wrap").innerHTML = `<button class="btn danger" id="clear" data-i18n="clearAll">${t("clearAll")}</button>`;
       return;
     }
     if (b.id === "copy") {
       const txt = summaryText();
-      const fb = () => { const ta = $("copy-fallback"); ta.value = txt; ta.hidden = false; ta.select(); $("copy-msg").textContent = "กดค้างเพื่อคัดลอกข้อความด้านล่าง"; };
-      try { navigator.clipboard.writeText(txt).then(() => { $("copy-msg").textContent = "คัดลอกแล้ว ✓"; }, fb); } catch (err) { fb(); }
+      const fb = () => { const ta = $("copy-fallback"); ta.value = txt; ta.hidden = false; ta.select(); $("copy-msg").textContent = t("copyHold"); };
+      try { navigator.clipboard.writeText(txt).then(() => { $("copy-msg").textContent = t("copied"); }, fb); } catch (err) { fb(); }
     }
   });
   // once a viewer edits the example, it stops being "example" only via start-fresh; editing keeps the banner so they know
@@ -544,77 +628,85 @@ label.btn { cursor: pointer; }
   let pendingImport = null;
   function parseImport(text) {
     let raw;
-    try { raw = JSON.parse(text); } catch (e) { return { err: "อ่าน JSON ไม่ได้: " + e.message }; }
+    try { raw = JSON.parse(text); } catch (e) { return { err: t("badJson", e.message) }; }
     const s = clean(raw);
-    if (!s) return { err: 'JSON ต้องเป็น object ที่มี "people" เป็น array (เช่น ที่ได้จากปุ่มส่งออก)' };
-    if (!s.people.length) return { err: "ไม่พบรายชื่อใน people" };
+    if (!s) return { err: t("badShape") };
+    if (!s.people.length) return { err: t("noPeople") };
     s.example = false;
     return { state: s };
   }
   function inMsg(text, cls) { const m = $("json-in-msg"); m.textContent = text; m.className = "caption " + (cls || ""); }
-  function resetLoadBtn() { $("json-in-wrap").innerHTML = `<button class="btn" id="json-load">โหลดเข้าตาราง</button>`; pendingImport = null; }
+  function resetLoadBtn() { $("json-in-wrap").innerHTML = `<button class="btn" id="json-load" data-i18n="loadJson">${t("loadJson")}</button>`; pendingImport = null; }
   $("json-file").addEventListener("change", (e) => {
     const f = e.target.files && e.target.files[0]; if (!f) return;
-    if (f.size > 1e6) { inMsg("ไฟล์ใหญ่เกิน 1 MB", "err"); return; }
+    if (f.size > 1e6) { inMsg(t("tooBig"), "err"); return; }
     const r = new FileReader();
-    r.onload = () => { $("json-in").value = String(r.result || ""); inMsg(`อ่านไฟล์ ${f.name} แล้ว กด "โหลดเข้าตาราง" เพื่อใช้`); };
-    r.onerror = () => inMsg("อ่านไฟล์ไม่สำเร็จ", "err");
+    r.onload = () => { $("json-in").value = String(r.result || ""); inMsg(t("fileRead", f.name)); };
+    r.onerror = () => inMsg(t("fileFail"), "err");
     r.readAsText(f); e.target.value = "";
   });
   document.addEventListener("click", (e) => {
     const b = e.target.closest("button"); if (!b) return;
     if (b.id === "json-copy") {
       const txt = exportJSON(), ta = $("json-out"); ta.value = txt;
-      const fb = () => { ta.focus(); ta.select(); $("json-out-msg").textContent = "เลือกข้อความให้แล้ว กดคัดลอกเอง"; };
-      try { navigator.clipboard.writeText(txt).then(() => { $("json-out-msg").textContent = "คัดลอกแล้ว ✓"; }, fb); } catch (err) { fb(); }
+      const fb = () => { ta.focus(); ta.select(); $("json-out-msg").textContent = t("selectedCopy"); };
+      try { navigator.clipboard.writeText(txt).then(() => { $("json-out-msg").textContent = t("copied"); }, fb); } catch (err) { fb(); }
     }
     if (b.id === "json-save" && downloads) {
       const name = "badminton-bill-" + new Date().toISOString().slice(0, 10) + ".json";
       downloads.save({ filename: name, data: new Blob([exportJSON()], { type: "application/json" }) })
-        .then(() => { $("json-out-msg").textContent = "บันทึกแล้ว ✓"; })
-        .catch(err => { $("json-out-msg").textContent = err && err.code === "declined" ? "ยกเลิกการบันทึก" : "บันทึกไฟล์ไม่ได้ ใช้ปุ่มคัดลอกแทน"; });
+        .then(() => { $("json-out-msg").textContent = t("saved"); })
+        .catch(err => { $("json-out-msg").textContent = err && err.code === "declined" ? t("saveCancel") : t("saveFail"); });
     }
     if (b.id === "json-load") {
       const r = parseImport($("json-in").value.trim());
       if (r.err) { inMsg(r.err, "err"); return; }
       pendingImport = r.state;
       const n = r.state.people.length, m = r.state.items.length;
-      $("json-in-wrap").innerHTML = `<span class="confirm">แทนที่บิลปัจจุบันด้วย ${n} คน ${m} รายการ? <button class="btn danger" id="json-yes">แทนที่เลย</button><button class="btn" id="json-no">ไม่</button></span>`;
+      $("json-in-wrap").innerHTML = `<span class="confirm">${esc(t("replaceQ", n, m))} <button class="btn danger" id="json-yes">${t("replaceYes")}</button><button class="btn" id="json-no">${t("no")}</button></span>`;
       inMsg("");
     }
-    if (b.id === "json-yes" && pendingImport) { state = pendingImport; resetLoadBtn(); change(); inMsg("โหลดเข้าตารางแล้ว ✓", "good"); }
+    if (b.id === "json-yes" && pendingImport) { state = pendingImport; resetLoadBtn(); change(); inMsg(t("loaded"), "good"); }
     if (b.id === "json-no") resetLoadBtn();
   });
   let downloads = null;
   if (window.claude && window.claude.use) window.claude.use("downloads").then(d => { downloads = d; $("json-save").hidden = !d; });
 
+  document.querySelectorAll(".lang button").forEach(b => b.addEventListener("click", () => {
+    if (b.dataset.lang === lang) return;
+    lang = b.dataset.lang;
+    try { localStorage.setItem("badminton-bill-lang", lang); } catch (e) {}
+    applyStatic(); $("status-text").textContent = t(statusKey); render();
+  }));
+
   // ---------- boot ----------
   try { const s = clean(JSON.parse(localStorage.getItem(LS_KEY) || "null")); if (s) state = s; } catch (e) {}
+  applyStatic();
   render();
   document.fonts && document.fonts.ready.then(renderDerived);
-  setStatus(false, "เก็บไว้ในเครื่องนี้");
+  setStatus(false, "stLocal");
 
   if (window.claude && window.claude.use) {
     window.claude.use("db").then(d => {
-      if (!d) { setStatus(false, "ออฟไลน์ · เก็บไว้ในเครื่องนี้เท่านั้น"); return; }
+      if (!d) { setStatus(false, "stOffline"); return; }
       db = d; docRef = db.doc(DOC_PATH);
       let first = true;
       docRef.onSnapshot(snap => {
         if (snap.metadata && snap.metadata.hasPendingWrites) return;
         if (!snap.exists) {
-          if (first) { setStatus(true, "ออนไลน์ · บิลยังว่าง แก้อะไรก็ได้เพื่อเริ่ม"); }
+          if (first) { setStatus(true, "stEmpty"); }
           first = false; return;
         }
         first = false;
         const s = clean(snap.data());
         if (!s) return;
         const incoming = JSON.stringify(s);
-        if (incoming === lastSent || incoming === JSON.stringify(state)) { setStatus(true, "ออนไลน์ · เพื่อนเห็นตรงกัน"); return; }
+        if (incoming === lastSent || incoming === JSON.stringify(state)) { setStatus(true, "stLive"); return; }
         state = s;
         try { localStorage.setItem(LS_KEY, incoming); } catch (e) {}
         render();
-        setStatus(true, "ออนไลน์ · อัปเดตล่าสุดจากเพื่อน");
-      }, () => setStatus(false, "หลุดการเชื่อมต่อ · เก็บไว้ในเครื่องนี้"));
+        setStatus(true, "stRemote");
+      }, () => setStatus(false, "stLost"));
     });
   }
 })();
