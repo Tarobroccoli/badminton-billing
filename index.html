@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>บิลก๊วนแบด</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mali:wght@400;600;700&display=swap">
@@ -18,6 +23,10 @@
 /* always white paper, even in dark mode (user request) */
 :root { color-scheme: light; }
 * { box-sizing: border-box; }
+html { color-scheme: light; }
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
 body { background: var(--paper); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.5; }
 .wrap { max-width: 1100px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 48px; display: grid; gap: 28px; }
 
@@ -116,6 +125,8 @@ label.btn { cursor: pointer; }
 .confirm { display: inline-flex; gap: 8px; align-items: center; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } .plus:hover { transform: none; } }
 </style>
+</head>
+<body>
 
 <div class="wrap">
   <header>
@@ -126,7 +137,7 @@ label.btn { cursor: pointer; }
       <div class="lang" role="group" aria-label="Language / ภาษา">
         <button type="button" data-lang="th" aria-pressed="true">TH</button><button type="button" data-lang="en" aria-pressed="false">EN</button>
       </div>
-      <div class="status" id="status"><span class="dot"></span><span id="status-text">กำลังเชื่อมต่อ…</span></div>
+      <div class="status" id="status"><span class="dot"></span><span id="status-text">กำลังโหลด…</span></div>
     </div>
   </header>
 
@@ -172,7 +183,7 @@ label.btn { cursor: pointer; }
         <div class="tools">
           <strong data-i18n="export">ส่งออก</strong>
           <button class="btn" id="json-copy" data-i18n="copyJson">คัดลอก JSON</button>
-          <button class="btn" id="json-save" data-i18n="saveJson" hidden>บันทึกเป็นไฟล์ .json</button>
+          <button class="btn" id="json-save" data-i18n="saveJson">บันทึกเป็นไฟล์ .json</button>
           <span id="json-out-msg" class="muted"></span>
         </div>
         <textarea id="json-out" readonly spellcheck="false" data-i18n-aria="jsonOutAria" aria-label="JSON ของบิลนี้"></textarea>
@@ -194,7 +205,6 @@ label.btn { cursor: pointer; }
 <script src="https://cdn.jsdelivr.net/npm/roughjs@4.6.6/bundled/rough.js"></script>
 <script>
 (() => {
-  const DOC_PATH = "bills/main";
   const LS_KEY = "badminton-bill-v1";
   const uid = () => Math.random().toString(36).slice(2, 9);
   const $ = (id) => document.getElementById(id);
@@ -222,9 +232,7 @@ label.btn { cursor: pointer; }
       noDebts: 'ยังไม่มีใครติดเงินใคร ติ๊กช่อง "หาร" ใต้ชื่อเพื่อนเพื่อแบ่งค่าใช้จ่าย', allClear: "เคลียร์ครบทุกคนแล้ว 🎉",
       sumLine: (it, price, owner, n) => `• ${it} ${price} (${owner} ออก, หาร ${n} คน)`, sentNote: "(โอนแล้ว)",
       chartFail: "โหลดตัววาดกราฟไม่สำเร็จ", mostOwed: "ค้างเยอะสุด!",
-      stSaved: "บันทึกออนไลน์แล้ว · เพื่อนเห็นตรงกัน", stReadOnly: "ดูได้อย่างเดียว (ไม่มีสิทธิ์แก้)", stSaveFail: "บันทึกออนไลน์ไม่สำเร็จ · เก็บไว้ในเครื่องนี้",
-      stLocal: "เก็บไว้ในเครื่องนี้", stOffline: "ออฟไลน์ · เก็บไว้ในเครื่องนี้เท่านั้น", stEmpty: "ออนไลน์ · บิลยังว่าง แก้อะไรก็ได้เพื่อเริ่ม",
-      stLive: "ออนไลน์ · เพื่อนเห็นตรงกัน", stRemote: "ออนไลน์ · อัปเดตล่าสุดจากเพื่อน", stLost: "หลุดการเชื่อมต่อ · เก็บไว้ในเครื่องนี้", stConnecting: "กำลังเชื่อมต่อ…",
+      stLocal: "บันทึกอัตโนมัติในเบราว์เซอร์นี้", stNoStore: "เบราว์เซอร์นี้บันทึกไม่ได้ · ปิดหน้าแล้วข้อมูลหาย", stConnecting: "กำลังโหลด…",
       clearQ: "ล้างทุกอย่างจริงไหม?", clearYes: "ล้างเลย", no: "ไม่",
       copyHold: "กดค้างเพื่อคัดลอกข้อความด้านล่าง", copied: "คัดลอกแล้ว ✓", selectedCopy: "เลือกข้อความให้แล้ว กดคัดลอกเอง",
       saved: "บันทึกแล้ว ✓", saveCancel: "ยกเลิกการบันทึก", saveFail: "บันทึกไฟล์ไม่ได้ ใช้ปุ่มคัดลอกแทน",
@@ -251,9 +259,7 @@ label.btn { cursor: pointer; }
       noDebts: 'Nobody owes anyone yet. Tick "Split" under a friend\'s name to share a cost.', allClear: "Everyone is settled 🎉",
       sumLine: (it, price, owner, n) => `• ${it} ${price} (${owner} paid, split ${n} ways)`, sentNote: "(paid)",
       chartFail: "Couldn't load the chart drawer", mostOwed: "owes the most!",
-      stSaved: "Saved online · everyone sees the same bill", stReadOnly: "View only (no edit access)", stSaveFail: "Couldn't save online · kept on this device",
-      stLocal: "Saved on this device", stOffline: "Offline · saved on this device only", stEmpty: "Online · bill is empty, edit anything to start",
-      stLive: "Online · everyone sees the same bill", stRemote: "Online · just updated by a friend", stLost: "Connection lost · saved on this device", stConnecting: "Connecting…",
+      stLocal: "Saved automatically in this browser", stNoStore: "This browser can't save · data is lost when you close the page", stConnecting: "Loading…",
       clearQ: "Clear everything?", clearYes: "Clear it", no: "No",
       copyHold: "Long-press to copy the text below", copied: "Copied ✓", selectedCopy: "Text selected, copy it manually",
       saved: "Saved ✓", saveCancel: "Save cancelled", saveFail: "Couldn't save the file, use Copy instead",
@@ -312,7 +318,6 @@ label.btn { cursor: pointer; }
   }
 
   let state = example();
-  let db = null, docRef = null, saveTimer = null, lastSent = "";
 
   // ---------- money ----------
   function compute() {
@@ -532,18 +537,12 @@ label.btn { cursor: pointer; }
   }
 
   // ---------- persistence ----------
-  let statusKey = "stConnecting";
-  function setStatus(live, key) { statusKey = key; $("status").classList.toggle("live", live); $("status-text").textContent = t(key); }
+  // Everything lives in this browser's localStorage; share between friends with JSON export/import.
+  let statusKey = "stLocal";
+  function setStatus(key, ok) { statusKey = key; $("status").classList.toggle("live", ok); $("status-text").textContent = t(key); }
   function save() {
-    try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
-    if (!docRef) return;
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(async () => {
-      const body = JSON.parse(JSON.stringify(state));
-      lastSent = JSON.stringify(body);
-      try { await docRef.set(body); setStatus(true, "stSaved"); }
-      catch (e) { setStatus(false, e && e.code === "permission_denied" ? "stReadOnly" : "stSaveFail"); }
-    }, 450);
+    try { localStorage.setItem(LS_KEY, JSON.stringify(state)); setStatus("stLocal", true); }
+    catch (e) { setStatus("stNoStore", false); }
   }
   function change(full = true) { full ? render() : renderDerived(); save(); }
 
@@ -652,11 +651,15 @@ label.btn { cursor: pointer; }
       const fb = () => { ta.focus(); ta.select(); $("json-out-msg").textContent = t("selectedCopy"); };
       try { navigator.clipboard.writeText(txt).then(() => { $("json-out-msg").textContent = t("copied"); }, fb); } catch (err) { fb(); }
     }
-    if (b.id === "json-save" && downloads) {
-      const name = "badminton-bill-" + new Date().toISOString().slice(0, 10) + ".json";
-      downloads.save({ filename: name, data: new Blob([exportJSON()], { type: "application/json" }) })
-        .then(() => { $("json-out-msg").textContent = t("saved"); })
-        .catch(err => { $("json-out-msg").textContent = err && err.code === "declined" ? t("saveCancel") : t("saveFail"); });
+    if (b.id === "json-save") {
+      try {
+        const url = URL.createObjectURL(new Blob([exportJSON()], { type: "application/json" }));
+        const a = document.createElement("a");
+        a.href = url; a.download = "badminton-bill-" + new Date().toISOString().slice(0, 10) + ".json";
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        $("json-out-msg").textContent = t("saved");
+      } catch (err) { $("json-out-msg").textContent = t("saveFail"); }
     }
     if (b.id === "json-load") {
       const r = parseImport($("json-in").value.trim());
@@ -669,8 +672,6 @@ label.btn { cursor: pointer; }
     if (b.id === "json-yes" && pendingImport) { state = pendingImport; resetLoadBtn(); change(); inMsg(t("loaded"), "good"); }
     if (b.id === "json-no") resetLoadBtn();
   });
-  let downloads = null;
-  if (window.claude && window.claude.use) window.claude.use("downloads").then(d => { downloads = d; $("json-save").hidden = !d; });
 
   document.querySelectorAll(".lang button").forEach(b => b.addEventListener("click", () => {
     if (b.dataset.lang === lang) return;
@@ -684,30 +685,9 @@ label.btn { cursor: pointer; }
   applyStatic();
   render();
   document.fonts && document.fonts.ready.then(renderDerived);
-  setStatus(false, "stLocal");
-
-  if (window.claude && window.claude.use) {
-    window.claude.use("db").then(d => {
-      if (!d) { setStatus(false, "stOffline"); return; }
-      db = d; docRef = db.doc(DOC_PATH);
-      let first = true;
-      docRef.onSnapshot(snap => {
-        if (snap.metadata && snap.metadata.hasPendingWrites) return;
-        if (!snap.exists) {
-          if (first) { setStatus(true, "stEmpty"); }
-          first = false; return;
-        }
-        first = false;
-        const s = clean(snap.data());
-        if (!s) return;
-        const incoming = JSON.stringify(s);
-        if (incoming === lastSent || incoming === JSON.stringify(state)) { setStatus(true, "stLive"); return; }
-        state = s;
-        try { localStorage.setItem(LS_KEY, incoming); } catch (e) {}
-        render();
-        setStatus(true, "stRemote");
-      }, () => setStatus(false, "stLost"));
-    });
-  }
+  try { localStorage.setItem("badminton-bill-probe", "1"); localStorage.removeItem("badminton-bill-probe"); setStatus("stLocal", true); }
+  catch (e) { setStatus("stNoStore", false); }
 })();
 </script>
+</body>
+</html>

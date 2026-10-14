@@ -9,9 +9,13 @@ A single-page tool for splitting badminton court costs with friends, drawn in an
 - JSON export / import
 - Thai / English toggle (TH | EN, top right), remembered per browser
 
-## Running
+## Use it
 
-`index.html` is written as a Claude Artifact page. Live sync between friends uses the Artifact `db` capability, so it only syncs when opened from its claude.ai artifact link. Opened anywhere else (local file, GitHub Pages), it still works but saves to that browser's `localStorage` only.
+**https://tarobroccoli.github.io/badminton-billing/**
+
+Everything is saved automatically in your own browser (`localStorage`), so each person who opens the page has their own bill. To hand a bill to a friend, use **Export** (copy JSON or save a `.json` file) and they **Import** it on their side.
+
+To run locally, open `index.html` in a browser. No build step.
 
 ## JSON format
 
